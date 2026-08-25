@@ -830,7 +830,12 @@ function buildPercyPanel(body, app) {
   }
   elements.follow.addEventListener('change', () => {
     state.follow = elements.follow.checked;
-    if (state.follow) maybeFollow(true);
+    /* F4 (2026-08-25): announce the claim so ingenuity.js's "Follow helicopter"
+     * stands down. Two followers easing the camera at once fight each other
+     * frame by frame; David asked for them to be mutually exclusive and this is
+     * the arbitration. Emitted on the bus rather than by reaching into the
+     * other module, so neither has to know the other exists. */
+    if (state.follow) { APP.emit('follow', { who: 'rover' }); maybeFollow(true); }
   });
   elements.percy.addEventListener('click', onPercyClick);
 
@@ -875,6 +880,15 @@ export function init(app) {
     if (key === 'waypoints') waypointsMissing = true;
   });
   app.on('data:ready', () => refreshFromData());
+
+  /* F4: the other half of the arbitration — drop follow-rover the moment
+   * anything else claims the camera. */
+  app.on('follow', (d) => {
+    if (d && d.who && d.who !== 'rover' && state.follow) {
+      state.follow = false;
+      if (elements.follow) elements.follow.checked = false;
+    }
+  });
 
   /* External sol changes (hashchange, or a future tour.js) — always route
    * through the one seek path so nothing can desync from it. */

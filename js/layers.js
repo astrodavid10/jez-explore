@@ -249,13 +249,50 @@ function buildContoursControl(body, app) {
   const fineAvailable = coarseAvailable && !LITE && groupPresent(map, crfIds);
   let interval = 'coarse';
 
+  /* F5 (2026-08-25) — the 10 m setting must never produce an EMPTY map.
+   *
+   * The fine contour layers carry a minzoom (12 since F5; it was 14), and this
+   * control hides the 50 m group whenever 10 m is selected. Below the fine
+   * minzoom that combination turned the coarse lines off and had nothing to
+   * turn on: David reported "the 10m contours only work when we are really
+   * really up close", and measurement showed z11/z12/z13/z13.5 rendering ZERO
+   * contour features of either kind.
+   *
+   * So "10 m" now means "10 m where 10 m can be drawn, 50 m elsewhere". The
+   * button stays lit — the visitor's choice is remembered, not silently
+   * reverted — and the sub-hint says which one they are actually looking at,
+   * because a map that quietly shows a different interval than the pressed
+   * button claims is its own kind of lie. */
+  const FINE_MINZOOM = 12;
+
+  function fineDrawableNow() {
+    return fineAvailable && map.getZoom() >= FINE_MINZOOM;
+  }
+
   function applyVisibility() {
     const on = input.checked;
-    setGroupVisible(map, crIds, on && interval === 'coarse');
-    if (fineAvailable) setGroupVisible(map, crfIds, on && interval === 'fine');
-    btn50.setAttribute('aria-pressed', String(interval === 'coarse'));
-    btn10.setAttribute('aria-pressed', String(interval === 'fine'));
+    const wantFine = interval === 'fine';
+    const fineNow = wantFine && fineDrawableNow();
+    /* Coarse carries the map whenever fine is not selected OR cannot draw. */
+    setGroupVisible(map, crIds, on && !fineNow);
+    if (fineAvailable) setGroupVisible(map, crfIds, on && fineNow);
+    btn50.setAttribute('aria-pressed', String(!wantFine));
+    btn10.setAttribute('aria-pressed', String(wantFine));
+    if (on && wantFine && !fineNow && fineAvailable) {
+      hint.hidden = false;
+      hint.textContent = 'Showing 50 m — zoom in for 10 m contours.';
+    } else if (coarseAvailable && hint.textContent.startsWith('Showing 50 m')) {
+      /* CLEAR the text, don't just hide the box: a hidden element that still
+       * says "Showing 50 m" is a stale claim waiting to be un-hidden by the
+       * next unrelated branch, and it reads as wrong to anything inspecting
+       * the DOM. */
+      hint.hidden = true;
+      hint.textContent = '';
+    }
   }
+
+  /* Re-evaluate on zoom so crossing the threshold swaps the groups live. */
+  map.on('zoomend', () => { if (input.checked) applyVisibility(); });
 
   if (!coarseAvailable) {
     input.disabled = true;
@@ -520,6 +557,11 @@ function buildLayersPanel(body, app) {
     key: 'heli', label: 'Flight paths', dataKeys: ['heliPaths'],
   });
   buildSimpleToggle(body, app, { key: 'wp', label: 'Waypoints', dataKeys: ['waypoints'] });
+  /* F3 (2026-08-25): Ginny's airfields get their own toggle beside Percy's
+   * waypoints — the same pairing as "Flight paths" beside "Full route". */
+  buildSimpleToggle(body, app, {
+    key: 'af', label: 'Airfields', dataKeys: ['heliFlights'],
+  });
   buildSimpleToggle(body, app, { key: 'samp', label: 'Samples', dataKeys: ['samples'] });
   buildSimpleToggle(body, app, { key: 'places', label: 'Place names', dataKeys: ['places'] });
   /* data.js loads 'traverse' normally but substitutes 'traverseLite' in lite
