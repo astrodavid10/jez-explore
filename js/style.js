@@ -464,41 +464,86 @@ function buildLayers(manifest, demSource, opts) {
     },
   });
 
-  /* 16 — the route already driven: the app's signature line */
+  /* 16 — the route already driven: the app's signature line.
+   *
+   * E6 (2026-08-25): drawn as a casing + line pair, and noticeably heavier
+   * than before. This is the one line the whole app exists to show, and at
+   * 1.5 px of #ffd166 it was losing to the dust it was drawn on. */
+  layers.push({
+    id: 'traverse-done-case', type: 'line', source: 'traverse',
+    filter: SOL_DONE,
+    layout: { ...V(true), 'line-join': 'round', 'line-cap': 'round' },
+    paint: {
+      'line-color': PALETTE.roverCase,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 3.8, 16, 6.6],
+      'line-opacity': 0.7,
+    },
+  });
   layers.push({
     id: 'traverse-done', type: 'line', source: 'traverse',
     filter: SOL_DONE,
     layout: { ...V(true), 'line-join': 'round', 'line-cap': 'round' },
     paint: {
       'line-color': PALETTE.rover,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1.5, 16, 3.0],
-      'line-opacity': 0.95,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2.2, 16, 4.0],
+      'line-opacity': 1,
     },
   });
 
   /* 17 — the drive in progress, revealed by line-gradient over line-progress.
-   * The timeline repaints only this one property between integer sols. */
+   * The timeline repaints only this one property between integer sols.
+   *
+   * E6: the casing here CANNOT be a plain full-length line — it would run
+   * ahead of the gradient and draw a dark stub into terrain the rover has not
+   * reached yet. It carries its own line-gradient with the same cutoff, so the
+   * casing is revealed in lockstep with the bright line above it. timeline.js
+   * repaints both (see its E6 note). */
+  layers.push({
+    id: 'traverse-progress-case', type: 'line', source: 'traverse-active',
+    layout: { ...V(true), 'line-join': 'round', 'line-cap': 'round' },
+    paint: {
+      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 3.8, 16, 6.6],
+      'line-gradient': ['step', ['line-progress'], PALETTE.roverCase, 1, 'rgba(0,0,0,0)'],
+      'line-opacity': 0.7,
+    },
+  });
   layers.push({
     id: 'traverse-progress', type: 'line', source: 'traverse-active',
     layout: { ...V(true), 'line-join': 'round', 'line-cap': 'round' },
     paint: {
-      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1.5, 16, 3.0],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2.2, 16, 4.0],
       'line-gradient': ['step', ['line-progress'], PALETTE.rover, 1, 'rgba(0,0,0,0)'],
     },
   });
 
-  /* 18–19 — Ingenuity ground tracks */
+  /* 18–19 — Ingenuity ground tracks.
+   *
+   * E6 (2026-08-25): cased and strengthened like the traverse. The old
+   * 1.2 px at 0.55 opacity was a hairline suggestion of 72 flights — and the
+   * flights are half the subject of this app, not an annotation on it. */
+  layers.push({
+    id: 'heli-path-case', type: 'line', source: 'heli-paths',
+    filter: SOL_DONE,
+    layout: { ...V(false), 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': PALETTE.heliCase, 'line-opacity': 0.6, 'line-width': 3.2 },
+  });
   layers.push({
     id: 'heli-path', type: 'line', source: 'heli-paths',
     filter: SOL_DONE,
     layout: { ...V(false), 'line-join': 'round' },
-    paint: { 'line-color': PALETTE.heli, 'line-opacity': 0.55, 'line-width': 1.2 },
+    paint: { 'line-color': PALETTE.heli, 'line-opacity': 0.9, 'line-width': 1.8 },
+  });
+  layers.push({
+    id: 'heli-path-sel-case', type: 'line', source: 'heli-paths',
+    filter: ['==', ['get', 'flight'], ['global-state', GLOBAL_STATE.FLIGHT]],
+    layout: { ...V(false), 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': PALETTE.heliCase, 'line-opacity': 0.8, 'line-width': 6.0 },
   });
   layers.push({
     id: 'heli-path-sel', type: 'line', source: 'heli-paths',
     filter: ['==', ['get', 'flight'], ['global-state', GLOBAL_STATE.FLIGHT]],
     layout: { ...V(false), 'line-join': 'round', 'line-cap': 'round' },
-    paint: { 'line-color': PALETTE.heli, 'line-opacity': 1, 'line-width': 2.6 },
+    paint: { 'line-color': PALETTE.heli, 'line-opacity': 1, 'line-width': 3.4 },
   });
 
   /* 20 — altitude ribbon. Height is AGL scaled by global-state vscale, which

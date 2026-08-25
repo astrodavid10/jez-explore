@@ -299,18 +299,31 @@ function applyIntegerSol(s) {
       activeSrc.setData(EMPTY_FC);
     }
   }
-  if (MAP.getLayer && MAP.getLayer('traverse-progress')) {
-    /* undefined resets to the style's own value (no dasharray = solid). */
-    MAP.setPaintProperty('traverse-progress', 'line-dasharray', drive && drive.live ? [2, 2] : undefined);
+  /* undefined resets to the style's own value (no dasharray = solid).
+   * E6: the casing dashes with the line, otherwise a live drive shows a solid
+   * dark bar with a dashed bright line sitting on it. */
+  for (const id of ['traverse-progress-case', 'traverse-progress']) {
+    if (MAP.getLayer && MAP.getLayer(id)) {
+      MAP.setPaintProperty(id, 'line-dasharray', drive && drive.live ? [2, 2] : undefined);
+    }
   }
   updateHUD(s);
   APP.emit('sol', { sol: s });   // hash.js already listens for this and debounces the write
 }
 
 function applyFrac(s, frac) {
+  /* E6 (2026-08-25): the casing under the in-progress drive carries its own
+   * gradient and has to be cut at the SAME fraction. Repaint both here or the
+   * dark casing runs ahead of the bright line and draws a stub into terrain
+   * the rover has not driven yet — most visible when scrubbing the slider. */
+  const cut = clamp01(frac);
+  if (MAP.getLayer && MAP.getLayer('traverse-progress-case')) {
+    MAP.setPaintProperty('traverse-progress-case', 'line-gradient',
+      ['step', ['line-progress'], PALETTE.roverCase, cut, 'rgba(0,0,0,0)']);
+  }
   if (MAP.getLayer && MAP.getLayer('traverse-progress')) {
     MAP.setPaintProperty('traverse-progress', 'line-gradient',
-      ['step', ['line-progress'], PALETTE.rover, clamp01(frac), 'rgba(0,0,0,0)']);
+      ['step', ['line-progress'], PALETTE.rover, cut, 'rgba(0,0,0,0)']);
   }
   const pos = computeRoverPosition(s, frac);
   if (pos && roverMarker) roverMarker.setLngLat(pos);

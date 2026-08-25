@@ -42,6 +42,7 @@
 
 import {
   VIEW, TUNING, MARKERS, ATTRIBUTION, GLOBAL_STATE, LANDING, SCALE as SCALE_FALLBACK,
+  PALETTE,
 } from './config.js';
 import { buildStyle, hillshadeExaggeration } from './style.js';
 
@@ -484,7 +485,7 @@ export async function createMap(app) {
     img.alt = kind;
     /* A missing SVG must not leave an invisible marker with no clue why. */
     img.addEventListener('error', () => {
-      el.style.background = kind === 'heli' ? '#5ad0ff' : '#ffd166';
+      el.style.background = kind === 'heli' ? PALETTE.heli : PALETTE.rover;
       el.style.borderRadius = '50%';
       console.warn(`[jezero] marker art missing: ${spec.url}`);
     });

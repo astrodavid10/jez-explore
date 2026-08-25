@@ -100,9 +100,18 @@ export const LAYER_IDS = [
   'depot-fill',           // 14  Three Forks depot polygon
   'depot-line',           // 14  Three Forks depot outline
   'traverse-future',      // 15  drives after the current sol
+  /* E6 (2026-08-25): each vehicle line now sits on a dark casing, the same
+   * USGS-topo trick A5 gave the contours. Additive to this frozen list — no
+   * existing id moved, so printed QR links keep resolving. Each `-case` id
+   * MUST stay immediately before the line it sits under: MapLibre draws in
+   * array order, and a casing drawn after its line covers it. */
+  'traverse-done-case',   // 16a casing under traverse-done
   'traverse-done',        // 16  drives up to the current sol — ON by default
+  'traverse-progress-case', // 17a casing under traverse-progress
   'traverse-progress',    // 17  line-gradient reveal of the drive in progress
+  'heli-path-case',       // 18a casing under heli-path
   'heli-path',            // 18  all flight ground tracks up to the current sol
+  'heli-path-sel-case',   // 19a casing under heli-path-sel
   'heli-path-sel',        // 19  selected flight, emphasized
   'heli-ribbon',          // 20  fill-extrusion altitude ribbon
   'waypoints-dot',        // 21  end-of-drive parking spots
@@ -145,7 +154,11 @@ export const HASH_KEYS = {
     places: ['places-label'],
     route:  ['traverse-future'],
     ell:    ['ellipse-line'],
-    heli:   ['heli-path', 'heli-path-sel'],
+    /* E6: the casings ride with the lines they sit under. Adding them to the
+     * SAME key rather than inventing a new one is what keeps old printed links
+     * correct — `on=heli` from a QR code toggles the casing too, so a stale
+     * link can never render a dark casing with no bright line on top of it. */
+    heli:   ['heli-path-case', 'heli-path', 'heli-path-sel-case', 'heli-path-sel'],
     rib:    ['heli-ribbon'],
   },
   /* value type per scalar key: 'int' | 'float' | 'bool' */
@@ -242,11 +255,41 @@ export const PALETTE = {
   accent: '#5ad0ff',
   danger: '#ff6060',
 
-  /* map */
+  /* map
+   *
+   * E6 (2026-08-25, David: "Perseverance and paths do not pop relative to the
+   * background imagery of Mars"). The two vehicle colors were re-chosen as a
+   * SYSTEM, not tweaked individually, because three constraints collide:
+   *
+   *   1. The terrain is ochre/tan (hue ~30 deg). Any warm line is fighting the
+   *      ground for the same hue family. The old rover gold #ffd166 lost that
+   *      fight at every zoom — that IS the defect being reported.
+   *   2. Light blue already belongs to the CONTOURS. David chose it deliberately
+   *      in A6 ("a nice light blue color to really pop", CONTOUR_STYLE.bold), so
+   *      the old heli cyan #5ad0ff was competing with the isolines for the same
+   *      slot on a Bold map.
+   *   3. Orange belongs to the sample tubes.
+   *
+   * That leaves rose and turquoise, which is a happy accident: they are near
+   * complements, so they separate hard from each other AND from tan, and they
+   * read as a deliberate pair rather than two unrelated picks. Ginny stays
+   * recognisably "the cool one" — she moves along the cyan->green axis, not
+   * across the wheel — so existing screenshots and printed QR stops still feel
+   * like the same app.
+   *
+   * Luminance does the work hue cannot: every vehicle line is drawn over a dark
+   * CASING (the A5 contour trick), so it separates even where the terrain is
+   * bright dune. `*Case` colors are near-black tinted toward their own hue, so
+   * the pairing never reads as two unrelated colors at hairline widths.
+   *
+   * `accent` stays #5ad0ff: it is CHROME (buttons, focus rings), not a map ink,
+   * so it does not compete with anything on the terrain. */
   mapBackground: '#0a0a0c',
-  rover: '#ffd166',            // traverse, waypoints, rover marker
-  roverStroke: '#241a06',
-  heli: '#5ad0ff',             // flight paths, ribbon, Ingenuity marker
+  rover: '#ff3d7f',            // traverse, waypoints, rover marker
+  roverStroke: '#38001a',
+  roverCase: '#2a0013',        // dark casing under the traverse lines
+  heli: '#2ee6c8',             // flight paths, ribbon, Ingenuity marker
+  heliCase: '#02322c',         // dark casing under the flight tracks
   sample: '#ff9f40',           // sample tubes, depot
   contourMinor: '#8a7a5c',
   contourMajor: '#c9b58c',
@@ -314,16 +357,24 @@ export const CONTOURS = {
  * [z14 -> z17] for fine, matching the ranges those layers actually draw over.
  * -------------------------------------------------------------------------- */
 export const CONTOUR_STYLE = {
+  /* E6 (2026-08-25): Subtle is the DEFAULT preset, so it is the one David
+   * actually sees, and its casings were width 0 / opacity 0 — leaving cream
+   * lines on tan terrain with nothing separating them. Contours are the
+   * "close third" priority behind the two vehicles, so the fix is measured:
+   * a real but faint casing, no color change. The lines stay cream (Bold is
+   * where the blue lives), they simply stop dissolving into the dust. Casing
+   * width stays under the Bold values so flipping Subtle -> Bold still reads
+   * as a clear step up rather than two similar-looking maps. */
   subtle: {
-    minor:     { color: '#d8c49a', w: [0.7, 1.1], o: [0.50, 0.75] },
-    major:     { color: '#f0dfb8', w: [1.3, 2.0], o: [0.65, 0.90] },
-    minorCase: { color: '#20160c', w: [0.0, 0.0], o: [0.00, 0.00] },
-    majorCase: { color: '#1a1208', w: [0.0, 0.0], o: [0.00, 0.00] },
-    fineMinor:     { color: '#d8c49a', w: [0.5, 0.9], o: [0.70, 0.70] },
-    fineMajor:     { color: '#f0dfb8', w: [1.0, 1.6], o: [0.85, 0.85] },
-    fineMinorCase: { color: '#20160c', w: [0.0, 0.0], o: [0.00, 0.00] },
-    fineMajorCase: { color: '#1a1208', w: [0.0, 0.0], o: [0.00, 0.00] },
-    label: { color: '#e0d4b6', halo: '#1a1510', haloWidth: 1.4, size: 10 },
+    minor:     { color: '#d8c49a', w: [0.7, 1.1], o: [0.55, 0.80] },
+    major:     { color: '#f0dfb8', w: [1.3, 2.0], o: [0.70, 0.95] },
+    minorCase: { color: '#20160c', w: [1.7, 2.5], o: [0.32, 0.32] },
+    majorCase: { color: '#1a1208', w: [2.6, 3.8], o: [0.42, 0.42] },
+    fineMinor:     { color: '#d8c49a', w: [0.5, 0.9], o: [0.75, 0.75] },
+    fineMajor:     { color: '#f0dfb8', w: [1.0, 1.6], o: [0.90, 0.90] },
+    fineMinorCase: { color: '#20160c', w: [1.5, 2.1], o: [0.32, 0.32] },
+    fineMajorCase: { color: '#1a1208', w: [2.2, 3.2], o: [0.42, 0.42] },
+    label: { color: '#e0d4b6', halo: '#1a1510', haloWidth: 1.6, size: 10 },
   },
   /* Bold is LIGHT BLUE, not cream (David, 2026-08-24: "make it a nice light
    * blue color to really pop"). Blue is the direct complement of Jezero's
