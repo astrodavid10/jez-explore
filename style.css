@@ -1,0 +1,777 @@
+/* =============================================================================
+ * Jezero Explorer — style.css
+ *
+ * House dark theme (same custom props as G:\2026\04_SDO\vla_viewer.html), a
+ * 320 px sidebar grid on desktop, a three-detent bottom sheet under 900 px and
+ * a right drawer on landscape phones. No framework, no build step.
+ *
+ * Layout contract for js/ui.js and the feature modules:
+ *   body[data-detent="peek"|"half"|"full"]   mobile sheet height
+ *   body.desktop / body.mobile               resolved breakpoint
+ *   body.kiosk                               ?kiosk=1 — dock hidden, big sol
+ *   body.lite                                lite mode (fewer effects)
+ *   body.tour                                tour running — dock dimmed 40 %
+ *   #panels > section.panel[data-panel=ID]   one registered panel
+ *   [data-tab] / [aria-selected]             mobile tab strip
+ * ========================================================================== */
+
+:root {
+  /* house chrome — mirrored in js/config.js PALETTE */
+  --bg: #111;
+  --panel: #1c1c1f;
+  --panel2: #25252a;
+  --border: #333;
+  --text: #ddd;
+  --muted: #888;
+  --accent: #5ad0ff;
+  --danger: #ff6060;
+
+  /* map accents, for chrome that has to agree with the layers */
+  --rover: #ffd166;
+  --heli: #5ad0ff;
+  --sample: #ff9f40;
+
+  --sidebar-w: 320px;
+  --topbar-h: 44px;
+  --radius: 4px;
+  --tap: 44px;                      /* minimum touch target */
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+
+  /* Sheet detents. --vh is set by js/ui.js as a fallback for browsers without
+     dvh; the dvh values win wherever they are supported. */
+  --vh: 1vh;
+  /* 148px (was 128): at 128 the sol slider's 44px row landed at y836 in an
+   * 844px emulated viewport and was clipped mid-track (integration pass). */
+  --peek-h: calc(148px + var(--safe-b));
+  --half-h: 55vh;
+  --full-h: 90vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --half-h: 55dvh;
+    --full-h: 90dvh;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* No rubber-banding behind the map or the sheet. */
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+body { overflow: hidden; }
+
+h1, h2, h3 { margin: 0; font-weight: 600; }
+a { color: var(--accent); }
+a:hover { color: #8fe0ff; }
+
+/* Tabular numerals everywhere a number changes in place (sol, km, elevation) —
+   otherwise the readout jitters as digits change width. */
+.num, #kiosk-sol, .sol-readout, .elev, #scalebar .label { font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------------------
+ * Boot banner + fatal error bar (index.html paints this before any module)
+ * ------------------------------------------------------------------------ */
+#boot-status {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9999;
+  padding: calc(6px + var(--safe-t)) 12px 6px;
+  background: #332;
+  color: #fc6;
+  font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+#boot-status.fatal { background: #3a1414; color: var(--danger); }
+
+/* ---------------------------------------------------------------------------
+ * Static fallback / noscript panel (no WebGL2 — the only fatal failure)
+ * ------------------------------------------------------------------------ */
+.static-panel {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 28px 20px calc(40px + var(--safe-b));
+  height: 100%;
+  overflow: auto;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.static-panel h1 { font-size: 26px; margin: 0 0 14px; }
+.static-panel p { margin: 0 0 14px; }
+.static-panel .hero {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+}
+.static-panel .credit { color: var(--muted); font-size: 12px; }
+
+/* ---------------------------------------------------------------------------
+ * App shell — desktop: 320 px sidebar + full-bleed map
+ * ------------------------------------------------------------------------ */
+#app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: 1fr;
+  /* 100dvh with a --vh fallback for older iOS. */
+  height: calc(var(--vh) * 100);
+  height: 100dvh;
+  width: 100%;
+}
+#app[hidden] { display: none; }
+
+#topbar { display: none; }
+
+#dock {
+  grid-column: 1;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  transition: opacity 0.25s;
+}
+body.tour #dock { opacity: 0.4; }
+body.tour #dock:hover, body.tour #dock:focus-within { opacity: 1; }
+
+#dock-handle { display: none; }
+
+#dock-head {
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+#dock-head h1 { font-size: 16px; letter-spacing: 0.01em; }
+#dock-head .sub { margin: 3px 0 10px; color: var(--muted); font-size: 11px; }
+
+button, input, select { font: inherit; color: inherit; }
+
+button.primary {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  background: linear-gradient(#2b3d46, #1f2c33);
+  color: #d9f4ff;
+  border: 1px solid #3d6675;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+button.primary:hover { border-color: var(--accent); color: #fff; }
+button.primary:disabled { opacity: 0.45; cursor: default; border-color: var(--border); }
+
+/* mobile tab strip — hidden on desktop, where every panel is visible at once */
+#tabs { display: none; }
+
+#panels {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+section.panel { border-bottom: 1px solid var(--border); }
+section.panel > .panel-title {
+  margin: 0;
+  padding: 9px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  cursor: default;
+}
+section.panel > .panel-body { padding: 0 12px 12px; }
+.panel-empty { color: var(--muted); font-size: 12px; padding: 2px 0 6px; }
+
+/* Generic panel widgets — feature modules reuse these classes so the five
+   panels look like one app. */
+.row { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; flex-wrap: wrap; }
+.row.tight { gap: 5px; }
+.spacer { flex: 1 1 auto; }
+.hint { color: var(--muted); font-size: 11px; }
+.strong { color: #fff; }
+
+.btn {
+  min-height: 30px;
+  padding: 5px 9px;
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  touch-action: manipulation;
+}
+.btn:hover { border-color: var(--accent); }
+.btn[aria-pressed="true"], .btn.on { border-color: var(--accent); color: #fff; background: #223038; }
+.btn:disabled { opacity: 0.4; cursor: default; border-color: var(--border); }
+.btn.wide { flex: 1 1 auto; }
+
+.link-btn {
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.link-btn:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+
+.toggle { display: flex; align-items: center; gap: 7px; min-height: 26px; cursor: pointer; }
+.toggle input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); flex: 0 0 auto; }
+
+/* Range inputs: 28 px thumb with a 44 px pseudo hit area (§4.2). */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: var(--tap);
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #3a3a41;
+}
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: #3a3a41; }
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px; height: 28px;
+  margin-top: -12px;
+  border-radius: 50%;
+  background: var(--rover);
+  border: 2px solid #1a1408;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--rover);
+  border: 2px solid #1a1408;
+}
+input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#dock-foot {
+  flex: 0 0 auto;
+  padding: 8px 12px calc(8px + var(--safe-b));
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.badge::before {
+  content: "";
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex: 0 0 auto;
+}
+.badge.live { color: #9be08f; }
+.badge.live::before { background: #7ad06a; box-shadow: 0 0 6px #7ad06a; }
+.badge.amber { color: #e5b769; }
+.badge.amber::before { background: #e0a63c; }
+
+/* ---------------------------------------------------------------------------
+ * Map + map chrome
+ * ------------------------------------------------------------------------ */
+#map-wrap { position: relative; grid-column: 2; min-width: 0; min-height: 0; }
+#map { position: absolute; inset: 0; background: #0a0a0c; }
+.maplibregl-canvas:focus { outline: none; }
+
+#map-tools {
+  position: absolute;
+  top: 10px; right: 10px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.tool {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 10px;
+  background: rgba(28, 28, 31, 0.92);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  backdrop-filter: blur(3px);
+  touch-action: manipulation;
+}
+.tool:hover { border-color: var(--accent); }
+.tool[aria-pressed="true"] { border-color: var(--accent); color: #fff; background: rgba(34, 48, 56, 0.95); }
+
+#exag-wrap {
+  width: 190px;
+  padding: 8px 10px 2px;
+  background: rgba(28, 28, 31, 0.92);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(3px);
+  font-size: 11px;
+}
+#exag-wrap[hidden] { display: none; }
+#exag-wrap label { color: var(--muted); display: block; margin-bottom: 2px; }
+#exag-wrap output { display: block; text-align: right; color: var(--text); margin-top: -6px; }
+
+#readout {
+  position: absolute;
+  left: 10px; bottom: 10px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  pointer-events: none;
+  font-size: 11px;
+}
+#scalebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  text-shadow: 0 1px 3px #000;
+}
+#scalebar .bar {
+  height: 5px;
+  width: 80px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-top: 0;
+  background: rgba(0, 0, 0, 0.25);
+  transition: width 0.12s linear;
+}
+#elev-readout {
+  align-self: flex-start;
+  padding: 3px 7px;
+  background: rgba(17, 17, 17, 0.78);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+}
+#elev-readout:empty, #elev-readout.hidden { display: none; }
+
+/* tour card (tour.js owns the contents) */
+#tour-card {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 6;
+  width: min(640px, calc(100% - 24px));
+  padding: 12px 14px calc(12px + var(--safe-b));
+  background: rgba(24, 24, 27, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+#tour-card[hidden] { display: none; }
+#tour-card .tour-step { color: var(--muted); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+#tour-card .tour-title { font-size: 17px; margin: 2px 0 6px; }
+#tour-card .tour-caption { font-size: 13.5px; line-height: 1.5; margin: 0 0 10px; }
+#tour-card .tour-nav { display: flex; align-items: center; gap: 8px; }
+
+/* kiosk sol readout */
+#kiosk-sol {
+  position: absolute;
+  top: 18px; left: 24px;
+  z-index: 5;
+  font-size: 54px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+}
+#kiosk-sol[hidden] { display: none; }
+#kiosk-sol .sub { display: block; font-size: 17px; font-weight: 400; color: #cfcfcf; }
+
+body.kiosk #dock, body.kiosk #topbar, body.kiosk #map-tools, body.kiosk #readout { display: none; }
+body.kiosk #app { grid-template-columns: 1fr; }
+body.kiosk #map-wrap { grid-column: 1; }
+
+/* context-lost bar */
+#context-lost {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 20;
+  background: #3a1414;
+  border-top: 1px solid #6b2626;
+}
+#context-lost[hidden] { display: none; }
+#context-lost button {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  background: none;
+  border: 0;
+  color: var(--danger);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------------------
+ * Toasts
+ * ------------------------------------------------------------------------ */
+#toasts {
+  position: fixed;
+  left: 50%;
+  bottom: calc(22px + var(--safe-b));
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  pointer-events: none;
+  width: min(420px, calc(100% - 24px));
+}
+.toast {
+  width: 100%;
+  padding: 9px 12px;
+  background: rgba(37, 37, 42, 0.96);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+  font-size: 12.5px;
+  animation: toast-in 0.18s ease-out;
+}
+.toast.warn { border-left-color: #e0a63c; }
+.toast.error { border-left-color: var(--danger); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+
+/* ---------------------------------------------------------------------------
+ * MapLibre popup + control theming (the defaults are white)
+ * ------------------------------------------------------------------------ */
+.maplibregl-popup { font: 13px/1.45 system-ui, sans-serif; }
+.maplibregl-popup-content {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 11px 13px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6);
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--panel); }
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip { border-bottom-color: var(--panel); }
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: var(--panel); }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--panel); }
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip { border-top-color: var(--panel); }
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: var(--panel); }
+.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--panel); }
+.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--panel); }
+.maplibregl-popup-close-button {
+  width: 30px; height: 30px;
+  color: var(--muted);
+  font-size: 18px;
+  background: none;
+  border-radius: 0 6px 0 0;
+}
+.maplibregl-popup-close-button:hover { background: var(--panel2); color: #fff; }
+
+/* popup content classes used by the popup builders */
+.pop-head { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.pop-title { font-size: 15px; margin: 1px 0 5px; }
+.pop-row { margin: 2px 0; }
+.pop-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 8px 0 6px; }
+.pop-thumbs img, .pop-thumbs .sk {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+.pop-links { display: flex; flex-direction: column; gap: 3px; font-size: 12px; margin-top: 6px; }
+
+.maplibregl-ctrl-group {
+  background: rgba(28, 28, 31, 0.92);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.maplibregl-ctrl-group button + button { border-top: 1px solid var(--border); }
+.maplibregl-ctrl-attrib {
+  background: rgba(17, 17, 17, 0.8) !important;
+  color: var(--muted);
+}
+.maplibregl-ctrl-attrib a { color: var(--muted); }
+.maplibregl-ctrl-attrib-button { filter: invert(1) brightness(0.85); }
+.maplibregl-ctrl-attrib.maplibregl-compact { min-height: 28px; }
+/* V1 fix (2026-08-23). `compact: true` in map.js does NOT start collapsed in
+   MapLibre 6: _updateCompact() adds maplibregl-compact AND
+   maplibregl-compact-show, so the control opens expanded and the (i) button
+   only ever closes it. With the one custom line PLUS the four per-source
+   strings that is 259 characters, which wrapped to 2 lines on desktop (box
+   1260 px wide starting at x 330 — straight across the scale bar) and to
+   5 lines / 104 px on a 390 px phone.
+   One line, ellipsised and width-capped: the box then sits at the right-hand
+   end of the bottom-right control column and clears the bottom-left readout.
+   Nothing is lost — the control still expands on tap, and the About panel
+   carries the per-dataset credits (§6). */
+.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-inner {
+  display: block;
+  /* 76px, not 32: the control's own padding plus the (i) button add ~46 px, and
+     the box floats right — cap the TEXT so the whole box lands inside a 390 px
+     phone instead of hanging 14 px off the left edge and clipping the start of
+     the credits. */
+  max-width: min(62ch, calc(100vw - 76px));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Markers. v6 adds .maplibregl-marker-covered when a marker is behind terrain
+   (opacityWhenCovered) — dim it further so it reads as "behind the hill". */
+.jz-marker { display: block; cursor: pointer; will-change: transform; }
+.jz-marker img { display: block; width: 100%; height: 100%; pointer-events: none; }
+.maplibregl-marker-covered .jz-marker { filter: saturate(0.4); }
+
+/* ===========================================================================
+ * MOBILE — bottom sheet with three detents (§4.2)
+ * ======================================================================== */
+@media (max-width: 899px) {
+  #app { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+
+  #topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 8;
+    height: calc(var(--topbar-h) + var(--safe-t));
+    padding: var(--safe-t) 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(17, 17, 17, 0.72);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .icon-btn {
+    min-width: var(--tap);
+    min-height: var(--tap);
+    background: none;
+    border: 0;
+    color: var(--text);
+    font-size: 17px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .icon-btn[aria-pressed="true"] { color: var(--accent); }
+  .topbar-title { flex: 1 1 auto; font-size: 14px; font-weight: 600; }
+
+  #map-wrap { grid-column: 1; grid-row: 1; }
+  #map-tools { top: calc(var(--topbar-h) + var(--safe-t) + 8px); }
+  /* +44, not +8: the attribution control sits at peek-h − 4 and its box is
+     32 px tall (V1 fix above), so the old +8 put the elevation readout and the
+     scale bar inside the same band as the credits — and on a 390 px phone the
+     one-line credits still span the full width, so "move it sideways" is not
+     available. Measured on 390x844: readout now y 609–652, credits y 658–690,
+     zero overlap. */
+  #readout { bottom: calc(var(--peek-h) + 44px); }
+  #tour-card { bottom: calc(var(--peek-h) + 10px); padding-bottom: 12px; }
+  #toasts { bottom: calc(var(--peek-h) + 14px); }
+
+  /* The sheet. Height comes from the detent; --drag is set live while the
+     handle is being dragged and cleared on release. */
+  #dock {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 9;
+    grid-column: 1;
+    height: var(--peek-h);
+    max-height: var(--full-h);
+    border-right: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.55);
+    transform: translateY(var(--drag, 0px));
+    transition: height 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  #dock.dragging { transition: none; }
+  body[data-detent="half"] #dock { height: var(--half-h); }
+  body[data-detent="full"] #dock { height: var(--full-h); }
+
+  /* touch-action:none ONLY on the handle — anywhere else it would kill
+     scrolling inside the panels. */
+  #dock-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    flex: 0 0 auto;
+    touch-action: none;
+    cursor: grab;
+  }
+  #dock-handle .grip {
+    width: 44px; height: 4px;
+    border-radius: 2px;
+    background: #4a4a52;
+  }
+  #dock-handle:active { cursor: grabbing; }
+
+  #dock-head { padding: 2px 12px 8px; }
+  #dock-head .titles { display: none; }          /* the topbar already says it */
+  #dock-head button.primary { min-height: 40px; }
+
+  /* tab strip */
+  #tabs {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  #tabs button {
+    flex: 1 1 0;
+    min-height: 38px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  #tabs button[aria-selected="true"] { color: #fff; border-color: var(--accent); background: #223038; }
+
+  /* One tab visible at a time on mobile. */
+  #panels > section.panel[hidden] { display: none; }
+
+  #dock-foot { padding-bottom: calc(8px + var(--safe-b)); }
+
+  /* Attribution and scale sit above the sheet. */
+  .maplibregl-ctrl-bottom-right { bottom: calc(var(--peek-h) - 4px); }
+  .maplibregl-ctrl-bottom-left { display: none; }   /* our own scale bar instead */
+}
+
+/* ---------------------------------------------------------------------------
+ * PORTRAIT PHONE, PEEK detent: only the timeline shows, whatever tab is
+ * selected — the sol slider is the one control that must always be a thumb
+ * away. Kept out of the general mobile block so the landscape drawer (which
+ * slides off-screen instead of shrinking) is unaffected.
+ * ------------------------------------------------------------------------ */
+@media (max-width: 899px) and (min-height: 501px) {
+  body[data-detent="peek"] #dock-head button.primary,
+  body[data-detent="peek"] #tabs,
+  body[data-detent="peek"] #dock-foot { display: none; }
+  body[data-detent="peek"] #panels { overflow: hidden; }
+  body[data-detent="peek"] #panels > section.panel { display: none; }
+  body[data-detent="peek"] #panels > section.panel[data-panel="TIMELINE"]:not([hidden]),
+  body[data-detent="peek"] #panels > section.panel[data-panel="TIMELINE"][hidden] { display: block; }
+  body[data-detent="peek"] section.panel > .panel-title { display: none; }
+
+  /* V2 fix (2026-08-23): 148 px of peek has to CONTAIN the sol slider, and on a
+     390x844 phone it did not — the 44 px slider ran from y 816 to y 860, i.e.
+     16 px past the bottom of the viewport, so the one control that must always
+     be a thumb away was clipped. Trim the chrome above it (grab handle, sol
+     type size, the gaps between the three readout lines) rather than growing
+     the detent or dropping the date / driven-distance lines. */
+  body[data-detent="peek"] #dock-handle { height: 16px; }
+  body[data-detent="peek"] #dock-head { padding-bottom: 2px; }
+  body[data-detent="peek"] #tl-sol { font-size: 22px; }
+  body[data-detent="peek"] #tl-date { margin: 0 0 2px; }
+  body[data-detent="peek"] section.panel > .panel-body > .row { margin-bottom: 4px; }
+}
+
+/* ===========================================================================
+ * LANDSCAPE PHONE — the sheet becomes a 300 px right drawer (§4.2)
+ * ======================================================================== */
+@media (max-width: 899px) and (max-height: 500px) {
+  #dock {
+    top: 0; bottom: 0; left: auto; right: 0;
+    width: 300px;
+    height: auto !important;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
+    transform: translateX(var(--drag-x, 0px));
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* PEEK = closed drawer: it slides off-screen rather than shrinking, so
+     nothing inside it needs collapsing. */
+  body[data-detent="peek"] #dock { transform: translateX(300px); }
+
+  #dock-handle {
+    position: absolute;
+    left: -26px; top: 50%;
+    width: 26px; height: 64px;
+    margin-top: -32px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-right: 0;
+    border-radius: 6px 0 0 6px;
+  }
+  #dock-handle .grip { width: 4px; height: 30px; }
+
+  #readout, #toasts, #tour-card { bottom: 10px; }
+  #tour-card { left: calc(50% - 150px); }
+  #map-tools { right: 310px; }
+  .maplibregl-ctrl-bottom-right { bottom: 0; right: 300px; }
+}
+
+/* Landscape floating sol pill. timeline.js fills it and clears [hidden]; it is
+   only ever shown on a landscape phone, where the sheet is a right drawer. */
+#sol-pill { display: none; }
+@media (max-width: 899px) and (max-height: 500px) {
+  #sol-pill:not([hidden]) {
+    display: flex;
+    position: absolute;
+    left: 50%; bottom: 10px;
+    transform: translateX(-50%);
+    z-index: 5;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(28, 28, 31, 0.92);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+  }
+}
+
+/* Pointer-coarse devices: no hover affordances, bigger targets. */
+@media (hover: none) {
+  .btn { min-height: var(--tap); }
+  .link-btn { min-height: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #dock, #scalebar .bar { transition: none; }
+}
