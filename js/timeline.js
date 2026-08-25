@@ -843,7 +843,17 @@ function buildPercyPanel(body, app) {
   }
 
   /* If the core data set already settled before this panel was built, index
-   * it now; otherwise init() picks it up on the 'data:ready' event. */
+   * it now; otherwise init() picks it up on the 'data:ready' event.
+   *
+   * E2 follow-up (2026-08-25): `maxSol` is re-derived here. The E2 split moved
+   * `const maxSol = getMaxSol()` into renderClock(), which left this `else`
+   * branch referencing a name that no longer existed in scope — and that
+   * branch only runs when the panel is built BEFORE data resolves. On a warm
+   * local cache the `if` side always won, so it passed every local test and
+   * then threw `ReferenceError: maxSol is not defined` on the live site,
+   * killing the whole Percy panel (0 rows). Caught by A8's module error
+   * logging, which is precisely the failure it was added for. */
+  const maxSol = getMaxSol();
   if (app.data && (app.data.traverse || app.data.waypoints)) {
     refreshFromData();
   } else {
