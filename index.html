@@ -157,6 +157,21 @@
       <button id="btn-3d" class="tool" aria-pressed="false" title="3D terrain">3D</button>
       <button id="btn-north" class="tool" title="Reset bearing to north">⟲ N</button>
       <button id="btn-lite" class="tool" aria-pressed="false" title="Lite mode — fewer effects, smoother on phones">◧ lite</button>
+      <!-- E5 (2026-08-25) — the clean-capture control. `?shot=1` shipped in D4
+           with no way to reach it from the UI, so the answer to David's "I'm not
+           sure where the button to take a completely UI free image is, does that
+           exist?" was: no. It does now. Hidden while capture mode is ACTIVE
+           (body.shot hides all chrome) — ui.js puts an escape affordance in its
+           place, because a mode you cannot leave without editing the URL is a
+           trap on a kiosk. -->
+      <button id="btn-shot" class="tool" title="Clean capture — hide all controls for a screenshot">⛶ shot</button>
+      <!-- E7 (2026-08-25) — the exaggeration slider is now COLLAPSIBLE. It used
+           to appear unconditionally whenever 3D was on and took a lot of real
+           estate with no way to dismiss it (David). `#exag-wrap` still only
+           exists while terrain is on; `#btn-exag` opens and closes it, and the
+           choice is remembered for the session. -->
+      <button id="btn-exag" class="tool" aria-pressed="false" aria-expanded="false"
+              aria-controls="exag-wrap" title="Vertical exaggeration" hidden>⇕ 1.5×</button>
       <div id="exag-wrap" hidden>
         <label for="exag">Vertical exaggeration<br /><span class="hint">1× is true Mars</span></label>
         <input id="exag" type="range" min="1" max="3" step="0.1" value="1.5" />

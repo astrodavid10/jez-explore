@@ -270,12 +270,35 @@ export const PALETTE = {
    *      slot on a Bold map.
    *   3. Orange belongs to the sample tubes.
    *
-   * That leaves rose and turquoise, which is a happy accident: they are near
-   * complements, so they separate hard from each other AND from tan, and they
-   * read as a deliberate pair rather than two unrelated picks. Ginny stays
-   * recognisably "the cool one" — she moves along the cyan->green axis, not
-   * across the wheel — so existing screenshots and printed QR stops still feel
-   * like the same app.
+   * E6b (2026-08-25, David's revision): "I think the Percy and Ginny colors are
+   * too dissimilar to each other and ginny and the contours too similar. I'd
+   * like them to all be on a nice complementary color pallette that contrasts
+   * the terrain."
+   *
+   * Both criticisms are the same mistake and have one fix. The first pass chose
+   * rose and turquoise, which are NEAR COMPLEMENTS OF EACH OTHER — maximum
+   * separation, which is exactly why the two vehicles stopped looking like they
+   * belonged to the same map. And it left Ginny's turquoise sitting ~20 deg from
+   * the blue of the contours, so the one pair that should have been far apart
+   * was the closest.
+   *
+   * The fix is to treat "contrasts the terrain" as the constraint on the WHOLE
+   * palette rather than on each ink separately. Jezero is ochre, hue ~30 deg, so
+   * its complement is azure ~210 deg: everything drawn on top of it lives in the
+   * cool half of the wheel, roughly 190-330 deg. Inside that arc the ordering is
+   * chosen by what has to read as related:
+   *
+   *     contours  ~200 deg  azure      structure — furthest from both vehicles
+   *     Ginny     ~265 deg  violet     \  55 deg apart: analogous, so they read
+   *     Percy     ~320 deg  magenta    /  as a pair, not as opponents
+   *
+   * So the two vehicles are now ANALOGOUS (a harmonious neighbouring pair) and
+   * the contours are a clear 65 deg from the nearer of them, inverting the two
+   * spacings that were wrong. All three are complementary to the terrain, which
+   * is the thing they actually have to fight.
+   *
+   * David's A6 decision that contours are "a nice light blue" is preserved
+   * exactly — it turns out to be the anchor the rest of the palette hangs off.
    *
    * Luminance does the work hue cannot: every vehicle line is drawn over a dark
    * CASING (the A5 contour trick), so it separates even where the terrain is
@@ -285,11 +308,15 @@ export const PALETTE = {
    * `accent` stays #5ad0ff: it is CHROME (buttons, focus rings), not a map ink,
    * so it does not compete with anything on the terrain. */
   mapBackground: '#0a0a0c',
-  rover: '#ff3d7f',            // traverse, waypoints, rover marker
-  roverStroke: '#38001a',
-  roverCase: '#2a0013',        // dark casing under the traverse lines
-  heli: '#2ee6c8',             // flight paths, ribbon, Ingenuity marker
-  heliCase: '#02322c',         // dark casing under the flight tracks
+  rover: '#ff5cc8',            // magenta ~320° — traverse, waypoints, rover marker
+  roverStroke: '#2e0526',
+  roverCase: '#240320',        // dark casing under the traverse lines
+  heli: '#b57bff',             // violet ~265° — flight paths, ribbon, Ingenuity marker
+  heliCase: '#1d0f36',         // dark casing under the flight tracks
+  /* Sample tubes stay warm ON PURPOSE. They are the only map ink that is not a
+   * path, they are small filled dots with a white stroke rather than a line, and
+   * keeping them out of the cool arc means the three cool inks above never have
+   * to compete with a fourth. */
   sample: '#ff9f40',           // sample tubes, depot
   contourMinor: '#8a7a5c',
   contourMajor: '#c9b58c',
@@ -365,16 +392,23 @@ export const CONTOUR_STYLE = {
    * where the blue lives), they simply stop dissolving into the dust. Casing
    * width stays under the Bold values so flipping Subtle -> Bold still reads
    * as a clear step up rather than two similar-looking maps. */
+  /* E6b (2026-08-25): Subtle went COOL. It was cream (#d8c49a / #f0dfb8), which
+   * is the terrain's own hue family — the same mistake the rover gold made, and
+   * the reason the default map's contours dissolved into the dust. It is now a
+   * low-chroma pale azure: the same ~200 deg anchor as Bold, just desaturated
+   * and thinner, so Subtle and Bold are one contour identity at two weights
+   * rather than two different colours, and the default map belongs to the same
+   * cool palette as the two vehicles. */
   subtle: {
-    minor:     { color: '#d8c49a', w: [0.7, 1.1], o: [0.55, 0.80] },
-    major:     { color: '#f0dfb8', w: [1.3, 2.0], o: [0.70, 0.95] },
-    minorCase: { color: '#20160c', w: [1.7, 2.5], o: [0.32, 0.32] },
-    majorCase: { color: '#1a1208', w: [2.6, 3.8], o: [0.42, 0.42] },
-    fineMinor:     { color: '#d8c49a', w: [0.5, 0.9], o: [0.75, 0.75] },
-    fineMajor:     { color: '#f0dfb8', w: [1.0, 1.6], o: [0.90, 0.90] },
-    fineMinorCase: { color: '#20160c', w: [1.5, 2.1], o: [0.32, 0.32] },
-    fineMajorCase: { color: '#1a1208', w: [2.2, 3.2], o: [0.42, 0.42] },
-    label: { color: '#e0d4b6', halo: '#1a1510', haloWidth: 1.6, size: 10 },
+    minor:     { color: '#9fc4dc', w: [0.7, 1.1], o: [0.60, 0.82] },
+    major:     { color: '#d6ecf8', w: [1.3, 2.0], o: [0.75, 0.95] },
+    minorCase: { color: '#0b141c', w: [1.7, 2.5], o: [0.34, 0.34] },
+    majorCase: { color: '#080f16', w: [2.6, 3.8], o: [0.44, 0.44] },
+    fineMinor:     { color: '#9fc4dc', w: [0.5, 0.9], o: [0.78, 0.78] },
+    fineMajor:     { color: '#d6ecf8', w: [1.0, 1.6], o: [0.90, 0.90] },
+    fineMinorCase: { color: '#0b141c', w: [1.5, 2.1], o: [0.34, 0.34] },
+    fineMajorCase: { color: '#080f16', w: [2.2, 3.2], o: [0.44, 0.44] },
+    label: { color: '#dbeaf5', halo: '#08131c', haloWidth: 1.6, size: 10 },
   },
   /* Bold is LIGHT BLUE, not cream (David, 2026-08-24: "make it a nice light
    * blue color to really pop"). Blue is the direct complement of Jezero's

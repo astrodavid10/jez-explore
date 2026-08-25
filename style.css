@@ -27,8 +27,8 @@
   --danger: #ff6060;
 
   /* map accents, for chrome that has to agree with the layers */
-  --rover: #ff3d7f;
-  --heli: #2ee6c8;
+  --rover: #ff5cc8;
+  --heli: #b57bff;
   --sample: #ff9f40;
 
   --sidebar-w: 320px;
@@ -516,157 +516,10 @@ body.shot #toasts { display: none !important; }
 body.shot #app { grid-template-columns: 1fr; }
 body.shot #map-wrap { grid-column: 1; }
 /* Attribution shrinks but never disappears — see the note above. */
-body.shot .maplibregl-ctrl-attrib { font-size: 9px; opacity: 0.55; }
-body.kiosk #app { grid-template-columns: 1fr; }
-body.kiosk #map-wrap { grid-column: 1; }
-
-/* context-lost bar */
-#context-lost {
-  position: absolute;
-  inset: auto 0 0 0;
-  z-index: 20;
-  background: #3a1414;
-  border-top: 1px solid #6b2626;
-}
-#context-lost[hidden] { display: none; }
-#context-lost button {
-  display: block;
-  width: 100%;
-  min-height: var(--tap);
-  background: none;
-  border: 0;
-  color: var(--danger);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-/* ---------------------------------------------------------------------------
- * Toasts
- * ------------------------------------------------------------------------ */
-#toasts {
-  position: fixed;
-  left: 50%;
-  bottom: calc(22px + var(--safe-b));
-  transform: translateX(-50%);
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  pointer-events: none;
-  width: min(420px, calc(100% - 24px));
-}
-.toast {
-  width: 100%;
-  padding: 9px 12px;
-  background: rgba(37, 37, 42, 0.96);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
-  font-size: 12.5px;
-  animation: toast-in 0.18s ease-out;
-}
-.toast.warn { border-left-color: #e0a63c; }
-.toast.error { border-left-color: var(--danger); }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
-
-/* ---------------------------------------------------------------------------
- * MapLibre popup + control theming (the defaults are white)
- * ------------------------------------------------------------------------ */
-.maplibregl-popup { font: 13px/1.45 system-ui, sans-serif; }
-.maplibregl-popup-content {
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 11px 13px;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6);
-}
-.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--panel); }
-.maplibregl-popup-anchor-top-left .maplibregl-popup-tip { border-bottom-color: var(--panel); }
-.maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: var(--panel); }
-.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--panel); }
-.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip { border-top-color: var(--panel); }
-.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: var(--panel); }
-.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--panel); }
-.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--panel); }
-.maplibregl-popup-close-button {
-  width: 30px; height: 30px;
-  color: var(--muted);
-  font-size: 18px;
-  background: none;
-  border-radius: 0 6px 0 0;
-}
-.maplibregl-popup-close-button:hover { background: var(--panel2); color: #fff; }
-
-/* popup content classes used by the popup builders */
-.pop-head { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.pop-title { font-size: 15px; margin: 1px 0 5px; }
-.pop-row { margin: 2px 0; }
-.pop-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 8px 0 6px; }
-.pop-thumbs img, .pop-thumbs .sk {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  background: var(--panel2);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-}
-.pop-links { display: flex; flex-direction: column; gap: 3px; font-size: 12px; margin-top: 6px; }
-
-.maplibregl-ctrl-group {
-  background: rgba(28, 28, 31, 0.92);
-  border: 1px solid var(--border);
-  box-shadow: none;
-}
-.maplibregl-ctrl-group button + button { border-top: 1px solid var(--border); }
-.maplibregl-ctrl-attrib {
-  background: rgba(17, 17, 17, 0.8) !important;
-  color: var(--muted);
-}
-.maplibregl-ctrl-attrib a { color: var(--muted); }
-.maplibregl-ctrl-attrib-button { filter: invert(1) brightness(0.85); }
-.maplibregl-ctrl-attrib.maplibregl-compact { min-height: 28px; }
-/* V1 fix (2026-08-23). `compact: true` in map.js does NOT start collapsed in
-   MapLibre 6: _updateCompact() adds maplibregl-compact AND
-   maplibregl-compact-show, so the control opens expanded and the (i) button
-   only ever closes it. With the one custom line PLUS the four per-source
-   strings that is 259 characters, which wrapped to 2 lines on desktop (box
-   1260 px wide starting at x 330 — straight across the scale bar) and to
-   5 lines / 104 px on a 390 px phone.
-   One line, ellipsised and width-capped: the box then sits at the right-hand
-   end of the bottom-right control column and clears the bottom-left readout.
-   Nothing is lost — the control still expands on tap, and the About panel
-   carries the per-dataset credits (§6). */
-/* Expanded state, driven by map.js's own (i) handler rather than MapLibre's.
-   The default one-liner above stays; this is what you get after a deliberate
-   tap, and it shows every credit in full because those are a condition of
-   using the NASA/ESA/DLR/USGS imagery, not chrome we can quietly clip. */
-.maplibregl-ctrl-attrib.jz-attrib-open .maplibregl-ctrl-attrib-inner {
-  white-space: normal;
-  text-overflow: clip;
-  overflow: visible;
-  max-width: min(46ch, calc(100vw - 76px));
-  line-height: 1.45;
-}
-.maplibregl-ctrl-attrib.jz-attrib-open {
-  max-width: min(48ch, calc(100vw - 24px));
-  padding-bottom: 2px;
-}
-
-.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-inner {
-  display: block;
-  /* 76px, not 32: the control's own padding plus the (i) button add ~46 px, and
-     the box floats right — cap the TEXT so the whole box lands inside a 390 px
-     phone instead of hanging 14 px off the left edge and clipping the start of
-     the credits. */
-  max-width: min(62ch, calc(100vw - 76px));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+body.shot /* E1 (2026-08-25): the ~60 lines of attribution styling that stood here are
+   gone with the control itself. map.js no longer adds a MapLibre
+   AttributionControl — the credits live in the About panel now, in full,
+   instead of ellipsised into one line over the terrain. */
 
 /* Markers. v6 adds .maplibregl-marker-covered when a marker is behind terrain
    (opacityWhenCovered) — dim it further so it reads as "behind the hill". */
@@ -719,13 +572,11 @@ body.kiosk #map-wrap { grid-column: 1; }
 
   #map-wrap { grid-column: 1; grid-row: 1; }
   #map-tools { top: calc(var(--topbar-h) + var(--safe-t) + 8px); }
-  /* +44, not +8: the attribution control sits at peek-h − 4 and its box is
-     32 px tall (V1 fix above), so the old +8 put the elevation readout and the
-     scale bar inside the same band as the credits — and on a 390 px phone the
-     one-line credits still span the full width, so "move it sideways" is not
-     available. Measured on 390x844: readout now y 609–652, credits y 658–690,
-     zero overlap. */
-  #readout { bottom: calc(var(--peek-h) + 44px); }
+  /* Back to +8 (E1, 2026-08-25). This was +44 to clear the 32 px attribution
+     box that used to sit at peek-h − 4; with the credit box removed from the
+     map there is nothing left to clear, so the readout and scale bar reclaim
+     36 px of phone screen. */
+  #readout { bottom: calc(var(--peek-h) + 8px); }
   #tour-card { bottom: calc(var(--peek-h) + 10px); padding-bottom: 12px; }
   #toasts { bottom: calc(var(--peek-h) + 14px); }
 
@@ -1007,10 +858,10 @@ body.kiosk #map-wrap { grid-column: 1; }
 
 /* The one per-vehicle difference: each panel wears its own map colour, so the
    list you are reading always matches the line you are looking at. */
-section.panel[data-panel="PERCY"] .veh-num { color: var(--rover, #ff3d7f); }
-section.panel[data-panel="PERCY"] .veh-row.sel { box-shadow: inset 2px 0 0 var(--rover, #ff3d7f); }
-section.panel[data-panel="GINNY"] .veh-num { color: var(--heli, #2ee6c8); }
-section.panel[data-panel="GINNY"] .veh-row.sel { box-shadow: inset 2px 0 0 var(--heli, #2ee6c8); }
+section.panel[data-panel="PERCY"] .veh-num { color: var(--rover, #ff5cc8); }
+section.panel[data-panel="PERCY"] .veh-row.sel { box-shadow: inset 2px 0 0 var(--rover, #ff5cc8); }
+section.panel[data-panel="GINNY"] .veh-num { color: var(--heli, #b57bff); }
+section.panel[data-panel="GINNY"] .veh-row.sel { box-shadow: inset 2px 0 0 var(--heli, #b57bff); }
 
 /* --- the shared profile chart ------------------------------------------- */
 .veh-chart { margin: 6px 0 10px; }

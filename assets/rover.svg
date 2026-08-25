@@ -1,19 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28" role="img" aria-label="Perseverance rover">
-  <!-- Perseverance marker. Rose #ff3d7f glyph, dark outline for contrast on bright HiRISE. E6 2026-08-25:
-       was gold #ff3d7f, which lost to the ochre terrain it sits on. -->
-  <g stroke="#38001a" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Perseverance marker. Magenta #ff5cc8 glyph, dark outline for contrast on bright HiRISE. E6 2026-08-25:
+       was gold #ff5cc8, which lost to the ochre terrain it sits on. -->
+  <g stroke="#2e0526" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
     <!-- chassis -->
-    <rect x="6.5" y="10" width="15" height="8" rx="2.2" fill="#ff3d7f"/>
+    <rect x="6.5" y="10" width="15" height="8" rx="2.2" fill="#ff5cc8"/>
     <!-- mast + camera head -->
     <path d="M18 10 V6.4" fill="none"/>
-    <circle cx="18" cy="5.4" r="2.1" fill="#ff3d7f"/>
+    <circle cx="18" cy="5.4" r="2.1" fill="#ff5cc8"/>
     <!-- wheels -->
-    <circle cx="9.4" cy="19.6" r="2.5" fill="#ff3d7f"/>
-    <circle cx="14" cy="19.6" r="2.5" fill="#ff3d7f"/>
-    <circle cx="18.6" cy="19.6" r="2.5" fill="#ff3d7f"/>
+    <circle cx="9.4" cy="19.6" r="2.5" fill="#ff5cc8"/>
+    <circle cx="14" cy="19.6" r="2.5" fill="#ff5cc8"/>
+    <circle cx="18.6" cy="19.6" r="2.5" fill="#ff5cc8"/>
   </g>
   <!-- wheel hubs, no stroke -->
-  <g fill="#38001a">
+  <g fill="#2e0526">
     <circle cx="9.4" cy="19.6" r="0.85"/>
     <circle cx="14" cy="19.6" r="0.85"/>
     <circle cx="18.6" cy="19.6" r="0.85"/>
