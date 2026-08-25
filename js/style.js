@@ -521,28 +521,32 @@ function buildLayers(manifest, demSource, opts) {
    * E6 (2026-08-25): cased and strengthened like the traverse. The old
    * 1.2 px at 0.55 opacity was a hairline suggestion of 72 flights — and the
    * flights are half the subject of this app, not an annotation on it. */
+  /* E2 (2026-08-25): VISIBLE by default. These were hidden behind "Ingenuity
+   * mode", which is exactly the asymmetry David asked to remove — Percy's
+   * traverse was never hidden behind a mode. They are ordinary layers now,
+   * toggled from the Map panel beside his. */
   layers.push({
     id: 'heli-path-case', type: 'line', source: 'heli-paths',
     filter: SOL_DONE,
-    layout: { ...V(false), 'line-join': 'round', 'line-cap': 'round' },
+    layout: { ...V(true), 'line-join': 'round', 'line-cap': 'round' },
     paint: { 'line-color': PALETTE.heliCase, 'line-opacity': 0.6, 'line-width': 3.2 },
   });
   layers.push({
     id: 'heli-path', type: 'line', source: 'heli-paths',
     filter: SOL_DONE,
-    layout: { ...V(false), 'line-join': 'round' },
+    layout: { ...V(true), 'line-join': 'round' },
     paint: { 'line-color': PALETTE.heli, 'line-opacity': 0.9, 'line-width': 1.8 },
   });
   layers.push({
     id: 'heli-path-sel-case', type: 'line', source: 'heli-paths',
     filter: ['==', ['get', 'flight'], ['global-state', GLOBAL_STATE.FLIGHT]],
-    layout: { ...V(false), 'line-join': 'round', 'line-cap': 'round' },
+    layout: { ...V(true), 'line-join': 'round', 'line-cap': 'round' },
     paint: { 'line-color': PALETTE.heliCase, 'line-opacity': 0.8, 'line-width': 6.0 },
   });
   layers.push({
     id: 'heli-path-sel', type: 'line', source: 'heli-paths',
     filter: ['==', ['get', 'flight'], ['global-state', GLOBAL_STATE.FLIGHT]],
-    layout: { ...V(false), 'line-join': 'round', 'line-cap': 'round' },
+    layout: { ...V(true), 'line-join': 'round', 'line-cap': 'round' },
     paint: { 'line-color': PALETTE.heli, 'line-opacity': 1, 'line-width': 3.4 },
   });
 

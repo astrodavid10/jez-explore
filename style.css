@@ -811,9 +811,13 @@ body.kiosk #map-wrap { grid-column: 1; }
   body[data-detent="peek"] #tabs,
   body[data-detent="peek"] #dock-foot { display: none; }
   body[data-detent="peek"] #panels { overflow: hidden; }
+  /* E2 (2026-08-25): peek now hides EVERY panel instead of force-showing the
+     old TIMELINE one. The sol slider moved out of the panels into #clock,
+     which lives in #dock-head and is not hidden here — so the one control that
+     must always be a thumb away is reachable at peek without singling out a
+     vehicle. Before E2 this rule named TIMELINE explicitly, which would have
+     meant peek showing Percy and not Ginny. */
   body[data-detent="peek"] #panels > section.panel { display: none; }
-  body[data-detent="peek"] #panels > section.panel[data-panel="TIMELINE"]:not([hidden]),
-  body[data-detent="peek"] #panels > section.panel[data-panel="TIMELINE"][hidden] { display: block; }
   body[data-detent="peek"] section.panel > .panel-title { display: none; }
 
   /* V2 fix (2026-08-23): 148 px of peek has to CONTAIN the sol slider, and on a
@@ -926,3 +930,95 @@ body.kiosk #map-wrap { grid-column: 1; }
 @media (prefers-reduced-motion: reduce) {
   #dock, #scalebar .bar { transition: none; }
 }
+
+/* ===========================================================================
+ * E2 (2026-08-25) — the mission clock, and the SHARED vehicle-panel shape.
+ *
+ * David: "Perseverance and Ingenuity are almost treated like different modes.
+ * They should both be treated in the same way in the menu."
+ *
+ * The `.veh-*` classes are the mechanism. Percy's panel and Ginny's panel are
+ * literally the same CSS — header, scrollable list, click-a-row, profile chart
+ * — so the two cannot drift apart again by someone styling one of them. The
+ * ONLY thing that differs is the accent, taken from each vehicle's own map
+ * colour by scoping on the panel id. Same structure, own identity.
+ * ======================================================================== */
+
+/* --- the clock: neutral ground, owned by neither vehicle ---------------- */
+#clock { margin: 10px 0 4px; }
+.clock-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+#clock #tl-sol { font-size: 26px; font-weight: 700; color: #fff; line-height: 1.15; }
+#clock #tl-date { margin: 0; }
+#clock #tl-slider { width: 100%; margin: 4px 0 2px; }
+.clock-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.clock-controls #tl-play { flex: 0 0 auto; min-width: 84px; }
+.clock-controls .seg { display: flex; gap: 0; flex: 1 1 auto; }
+.clock-controls .seg .btn {
+  flex: 1 1 0;
+  border-radius: 0;
+  min-width: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.clock-controls .seg .btn:first-child {
+  border-top-left-radius: var(--radius, 4px);
+  border-bottom-left-radius: var(--radius, 4px);
+}
+.clock-controls .seg .btn:last-child {
+  border-top-right-radius: var(--radius, 4px);
+  border-bottom-right-radius: var(--radius, 4px);
+}
+.clock-controls .seg .btn + .btn { border-left: 0; }
+
+/* --- the shared vehicle-panel shape ------------------------------------- */
+.veh-header { margin: 2px 0 10px; font-size: 12.5px; }
+
+.veh-list {
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border, #333);
+  border-radius: var(--radius, 4px);
+  margin-bottom: 10px;
+}
+.veh-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;          /* touch target — never shrink this */
+  padding: 0 8px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border, #333);
+  color: var(--text, #ddd);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.veh-row:last-child { border-bottom: 0; }
+.veh-row:hover, .veh-row.sel { background: var(--panel2, #25252a); }
+.veh-row.sel { color: #fff; }
+.veh-num { flex: 0 0 58px; font-weight: 600; }
+.veh-mid { flex: 1 1 auto; color: var(--muted, #888); font-size: 11px; }
+.veh-a, .veh-b { flex: 0 0 auto; font-size: 11.5px; }
+
+/* The one per-vehicle difference: each panel wears its own map colour, so the
+   list you are reading always matches the line you are looking at. */
+section.panel[data-panel="PERCY"] .veh-num { color: var(--rover, #ff3d7f); }
+section.panel[data-panel="PERCY"] .veh-row.sel { box-shadow: inset 2px 0 0 var(--rover, #ff3d7f); }
+section.panel[data-panel="GINNY"] .veh-num { color: var(--heli, #2ee6c8); }
+section.panel[data-panel="GINNY"] .veh-row.sel { box-shadow: inset 2px 0 0 var(--heli, #2ee6c8); }
+
+/* --- the shared profile chart ------------------------------------------- */
+.veh-chart { margin: 6px 0 10px; }
+.veh-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+}
+.veh-chart-ax { display: flex; justify-content: space-between; margin-top: 2px; }

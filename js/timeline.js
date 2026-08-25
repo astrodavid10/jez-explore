@@ -149,6 +149,8 @@ function buildWaypointsIndex(fc) {
       elev: Number.isFinite(f?.properties?.elev) ? f.properties.elev : null,
       km: Number.isFinite(f?.properties?.km) ? f.properties.km : null,
       date: f?.properties?.date || null,
+      /* E2: the list rows use this as a tooltip. */
+      note: f?.properties?.note || '',
     }))
     .filter((w) => Number.isFinite(w.sol) && Number.isFinite(w.lon) && Number.isFinite(w.lat))
     .sort((a, b) => a.sol - b.sol);
@@ -271,8 +273,137 @@ function updateHUD(s) {
     }
   }
 
+  renderPercyHeader(s, km);
+  renderPercyList(s);
+  movePercyPlayhead(s);
   syncSliders(s);
   updateKiosk(s);
+}
+
+/* ---------------------------------------------------------------------------
+ * E2 — Percy's stats header, list and profile.
+ *
+ * These are the three things Ginny had and Percy did not. Everything below
+ * reads the SAME waypoint index the slider already drives, so the panel can
+ * never disagree with the map: one source, one sol, one truth.
+ * ------------------------------------------------------------------------ */
+
+/** Mirrors ingenuity.js's "72 flights · 18.14 km · 2h 09m" summary line. */
+function renderPercyHeader(s, km) {
+  if (!elements.header) return;
+  if (!waypointsSorted.length) {
+    elements.header.textContent = 'Traverse data is not available in this build.';
+    return;
+  }
+  const done = waypointsSorted.filter((w) => w.sol <= s).length;
+  elements.header.innerHTML =
+    `<strong>${km.toFixed(2)} km</strong> driven · ` +
+    `<strong>${done}</strong> stop${done === 1 ? '' : 's'} · ` +
+    `sol <strong>${s}</strong> of ${getMaxSol()}`;
+}
+
+/**
+ * Percy's stops, newest first — the direct analogue of Ginny's flight list,
+ * down to the sol filter. Newest first because the interesting end of a
+ * 547-row list is the end the rover is at now; Ginny's list reads the same way.
+ *
+ * Rows are rendered only for sols already reached, so scrubbing the clock
+ * grows and shrinks this list exactly as it grows and shrinks her flight list.
+ */
+function renderPercyList(s) {
+  if (!elements.list) return;
+  if (!waypointsSorted.length) {
+    elements.list.innerHTML = '<p class="panel-empty">No waypoint data.</p>';
+    return;
+  }
+  const rows = waypointsSorted.filter((w) => w.sol <= s);
+  if (!rows.length) {
+    elements.list.innerHTML =
+      `<p class="panel-empty">Percy has not driven yet at sol ${s} — ` +
+      `the first localization was sol ${waypointsSorted[0].sol}.</p>`;
+    return;
+  }
+  /* Rebuilding 547 rows on every animation frame would make Play stutter, so
+   * the list is only rebuilt when the row COUNT actually changes. Playback
+   * crosses a waypoint a few dozen times across the whole mission; it repaints
+   * then, and not on the thousands of frames in between. */
+  if (elements.list.dataset.count === String(rows.length)) return;
+  elements.list.dataset.count = String(rows.length);
+
+  const frag = document.createDocumentFragment();
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const w = rows[i];
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'veh-row';
+    row.innerHTML =
+      `<span class="veh-num">sol ${w.sol}</span>` +
+      `<span class="veh-mid">${formatEarthDate(w.date) || ''}</span>` +
+      `<span class="veh-a num">${Number.isFinite(w.km) ? w.km.toFixed(2) : '—'} km</span>` +
+      `<span class="veh-b num">${Number.isFinite(w.elev) ? Math.round(w.elev) : '—'} m</span>`;
+    row.title = w.note || '';
+    row.addEventListener('click', () => flyToWaypoint(w));
+    frag.appendChild(row);
+  }
+  elements.list.innerHTML = '';
+  elements.list.appendChild(frag);
+}
+
+/** Click-a-row-to-fly, the same affordance selectFlight() gives Ginny. */
+function flyToWaypoint(w) {
+  if (!MAP || !w || !Number.isFinite(w.lon) || !Number.isFinite(w.lat)) return;
+  MAP.flyTo({ center: [w.lon, w.lat], zoom: Math.max(MAP.getZoom(), 15.5), essential: true });
+}
+
+/**
+ * Elevation along the traverse — Percy's answer to the altitude chart.
+ *
+ * Drawn once from the full waypoint set rather than per-sol, with a playhead
+ * that tracks the clock, because the SHAPE of the climb is the story: Percy
+ * spends five years walking up out of a crater. A chart that only drew the
+ * part already driven would hide exactly that.
+ */
+function renderPercyChart() {
+  if (!elements.chart) return;
+  const pts = waypointsSorted.filter((w) => Number.isFinite(w.elev) && Number.isFinite(w.sol));
+  if (pts.length < 2) { elements.chart.innerHTML = ''; return; }
+
+  const W = 268, H = 62, padL = 2, padR = 2, padT = 5, padB = 5;
+  const sMax = pts[pts.length - 1].sol || 1;
+  let lo = Infinity, hi = -Infinity;
+  for (const p of pts) { if (p.elev < lo) lo = p.elev; if (p.elev > hi) hi = p.elev; }
+  const span = Math.max(1, hi - lo);
+  const xAt = (sol) => padL + (sol / sMax) * (W - padL - padR);
+  const yAt = (e) => H - padB - ((e - lo) / span) * (H - padT - padB);
+
+  let line = '';
+  for (let i = 0; i < pts.length; i++) {
+    line += `${i === 0 ? 'M' : 'L'}${xAt(pts[i].sol).toFixed(1)},${yAt(pts[i].elev).toFixed(1)} `;
+  }
+  const area = `${line}L${xAt(sMax).toFixed(1)},${(H - padB).toFixed(1)} ` +
+    `L${xAt(0).toFixed(1)},${(H - padB).toFixed(1)} Z`;
+
+  elements.chart.innerHTML =
+    `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="veh-chart-svg" ` +
+    `role="img" aria-label="Elevation along the traverse, ${Math.round(lo)} to ${Math.round(hi)} metres">` +
+    `<path d="${area}" fill="rgba(255,61,127,0.16)" stroke="none"></path>` +
+    `<path d="${line}" fill="none" stroke="${PALETTE.rover}" stroke-width="1.4"></path>` +
+    `<line id="tl-playhead" x1="0" y1="${padT}" x2="0" y2="${H - padB}" ` +
+    `stroke="#fff" stroke-width="1" stroke-dasharray="2,2" opacity="0.85"></line>` +
+    `</svg>` +
+    `<div class="veh-chart-ax hint"><span>${Math.round(lo)} m</span><span>${Math.round(hi)} m</span></div>`;
+
+  elements.chartX = { xAt, playhead: elements.chart.querySelector('#tl-playhead') };
+  movePercyPlayhead(state.sol);
+}
+
+/** Slides the chart playhead to the clock's sol. Cheap enough for every frame. */
+function movePercyPlayhead(s) {
+  const cx = elements.chartX;
+  if (!cx || !cx.playhead || !Number.isFinite(s)) return;
+  const x = cx.xAt(s).toFixed(1);
+  cx.playhead.setAttribute('x1', x);
+  cx.playhead.setAttribute('x2', x);
 }
 
 /* ---------------------------------------------------------------------------
@@ -553,6 +684,10 @@ function refreshFromData() {
   if (elements.slider) elements.slider.max = String(maxSol);
   if (elements.pillSlider) elements.pillSlider.max = String(maxSol);
 
+  /* E2: the profile is drawn from the full waypoint set, so it is rebuilt
+   * here (when the data changes) rather than per-sol. */
+  renderPercyChart();
+
   const gs = (MAP.getGlobalState && MAP.getGlobalState()) || {};
   const initialSol = Number.isFinite(gs[GLOBAL_STATE.SOL]) ? gs[GLOBAL_STATE.SOL] : maxSol;
   seekTo(clamp(initialSol, 0, maxSol));
@@ -588,59 +723,108 @@ function buildSolPill() {
  * Peek-detent space is handled by the injected stylesheet above, not by
  * reordering these — see the comment there).
  * ------------------------------------------------------------------------ */
-function buildTimelinePanel(body, app) {
+/**
+ * E2 (2026-08-25) — the CLOCK, rendered into #clock, outside every panel.
+ *
+ * The sol slider filters the rover traverse and the 72 flight tracks alike, so
+ * it belongs to neither vehicle. Leaving it inside "Percy" would rebuild the
+ * exact asymmetry E2 exists to remove: Ginny's flight list would be filtered by
+ * a control living in someone else's tab. It is the app's clock, so it sits
+ * above the tab strip and stays visible whichever vehicle you are looking at.
+ *
+ * Nothing vehicle-specific renders here — km driven and rover elevation moved
+ * into the Percy panel, which is where a statement about the rover belongs.
+ */
+function renderClock() {
+  const host = document.getElementById('clock');
+  if (!host) return false;
+  const maxSol = getMaxSol();
+  host.innerHTML = `
+    <div class="clock-head">
+      <span id="tl-sol" class="num">SOL ${maxSol}</span>
+      <span id="tl-date" class="hint"></span>
+    </div>
+    <input type="range" id="tl-slider" class="num" min="0" max="${maxSol}" step="1" value="${maxSol}"
+           aria-label="Mission sol" />
+    <div class="clock-controls">
+      <button type="button" class="btn" id="tl-play" aria-pressed="false">▶ Play</button>
+      <div class="seg" id="tl-speed" role="group" aria-label="Playback speed">
+        <button type="button" class="btn" data-speed="slow" aria-pressed="false">Slow</button>
+        <button type="button" class="btn" data-speed="normal" aria-pressed="true">Normal</button>
+        <button type="button" class="btn" data-speed="fast" aria-pressed="false">Fast</button>
+      </div>
+    </div>
+  `;
+  return true;
+}
+
+/* ---------------------------------------------------------------------------
+ * DOM — the PERCY panel.
+ *
+ * Deliberately built to the SAME shape as ingenuity.js's Ginny panel, because
+ * that shape IS the parity David asked for:
+ *
+ *     stats header  ->  scrollable list  ->  click a row to fly  ->  profile
+ *
+ * Ginny had all four and Percy had none of them. The list is his 547
+ * end-of-drive waypoints (the direct analogue of her 72 flights) and the
+ * profile is elevation along the traverse (the analogue of her altitude chart).
+ * ------------------------------------------------------------------------ */
+function buildPercyPanel(body, app) {
   APP = app;
   MAP = app.map;
   ensureStyle();
 
-  const maxSol = getMaxSol();
+  /* The clock lives outside every panel, but it is this module's state, so it
+   * is rendered here — one build path means the wiring below can never run
+   * against half-present DOM. */
+  renderClock();
+
   body.innerHTML = `
-    <div id="tl-sol" class="num">SOL ${maxSol}</div>
-    <div id="tl-date" class="hint"></div>
-    <div class="row tight">
-      <span id="tl-km" class="num strong"></span>
-    </div>
+    <p class="veh-header" id="tl-header">Loading traverse…</p>
     <div class="tl-elev-line">
       <span id="tl-elev" class="num strong"></span>
       <span id="tl-elev-rel" class="hint"></span>
     </div>
-    <input type="range" id="tl-slider" class="num" min="0" max="${maxSol}" step="1" value="${maxSol}"
-           aria-label="Mission sol" />
-    <div class="row">
-      <button type="button" class="btn wide" id="tl-play" aria-pressed="false">▶ Play</button>
-    </div>
-    <div class="row tight" id="tl-speed" role="group" aria-label="Playback speed">
-      <button type="button" class="btn" data-speed="slow" aria-pressed="false">Slow</button>
-      <button type="button" class="btn" data-speed="normal" aria-pressed="true">Normal</button>
-      <button type="button" class="btn" data-speed="fast" aria-pressed="false">Fast</button>
-    </div>
+    <span id="tl-km" class="num strong" hidden></span>
     <label class="toggle">
       <input type="checkbox" id="tl-follow" /> Follow rover
     </label>
     <div class="row">
       <button type="button" class="link-btn" id="tl-percy">⤓ Where is Percy now?</button>
     </div>
+    <div class="veh-chart" id="tl-chart"></div>
+    <div class="veh-list" id="tl-list"><p class="panel-empty">Loading…</p></div>
     <p class="panel-empty" id="tl-note" hidden>Traverse and waypoint data aren't available yet —
       sol scrubbing is disabled until the pipeline produces them.</p>
   `;
 
-  elements.sol = body.querySelector('#tl-sol');
-  elements.date = body.querySelector('#tl-date');
+  /* Queried from `document`, not `body`: the clock's controls are outside this
+   * panel now, so a body-scoped query would silently return null for them and
+   * leave the slider dead. */
+  elements.sol = document.querySelector('#tl-sol');
+  elements.date = document.querySelector('#tl-date');
+  elements.slider = document.querySelector('#tl-slider');
+  elements.play = document.querySelector('#tl-play');
+  elements.speedBtns = Array.from(document.querySelectorAll('#tl-speed [data-speed]'));
+
   elements.km = body.querySelector('#tl-km');
+  elements.header = body.querySelector('#tl-header');
   elements.elev = body.querySelector('#tl-elev');
   elements.elevRel = body.querySelector('#tl-elev-rel');
-  elements.slider = body.querySelector('#tl-slider');
-  elements.play = body.querySelector('#tl-play');
-  elements.speedBtns = Array.from(body.querySelectorAll('#tl-speed [data-speed]'));
   elements.follow = body.querySelector('#tl-follow');
   elements.percy = body.querySelector('#tl-percy');
   elements.note = body.querySelector('#tl-note');
+  elements.list = body.querySelector('#tl-list');
+  elements.chart = body.querySelector('#tl-chart');
 
-  elements.slider.addEventListener('input', () => {
-    if (state.playing) stopPlaying();
-    seekTo(elements.slider.value);
-  });
-  elements.play.addEventListener('click', togglePlay);
+  if (elements.slider) {
+    elements.slider.addEventListener('input', () => {
+      if (state.playing) stopPlaying();
+      seekTo(elements.slider.value);
+    });
+  }
+  if (elements.play) elements.play.addEventListener('click', togglePlay);
   for (const btn of elements.speedBtns) {
     btn.addEventListener('click', () => setSpeed(btn.dataset.speed));
   }
@@ -713,4 +897,4 @@ export function init(app) {
   });
 }
 
-registerPanel('TIMELINE', buildTimelinePanel);
+registerPanel('PERCY', buildPercyPanel);
