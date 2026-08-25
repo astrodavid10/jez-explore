@@ -97,6 +97,9 @@ const RIBBON_MODE = 'terrain-relative'; // | 'absolute'
 
 /** Ribbon width in true Mars meters (design §4.4: "3 Mars meters wide"). */
 const RIBBON_WIDTH_M = 3;
+/** E3: floating flight-path tube — square in section, so width == 2 x half. */
+const TRACK_WIDTH_M = 2.5;
+const TRACK_HALF_M = 1.25;
 /** Floating-heli leader quad width during replay (design §4.4: "1 m-wide"). */
 const LEADER_WIDTH_M = 1;
 /** Floating-heli hexagon radius during replay (not specced exactly; small). */
@@ -129,6 +132,7 @@ let cardHost = null;
 
 let currentAlt = null;        // fetched heli-alt/flight-NN.json for the selected flight
 let ribbonBaseFeatures = [];  // the static ribbon quads for the selected flight
+let trackFeatures = [];       // E3: the floating flight-path quads for that flight
 let chart = null;             // { setPlayhead(t|null) }
 
 let replayPlaying = false;
@@ -536,6 +540,88 @@ function buildRibbonFeatures(alt) {
   return feats;
 }
 
+/**
+ * E3 (2026-08-25) — the flight path floating at its true altitude.
+ *
+ * David: "ingenuity in theory has 3D flight paths on the D drive somewhere...
+ * let's incorporate those if possible."
+ *
+ * They are already here. `data/heli-alt/flight-NN.json` carries lon/lat/agl/gnd
+ * for every flight, decimated to ~2 Hz by p08 from the 60 Hz IAU_MARS
+ * trajectories in `D:\\05_ingenuity\\outputs\\flight_NN\\trajectory.csv`. What was
+ * missing was a rendering that shows the trajectory AS a trajectory: the
+ * existing `heli-ribbon` is a curtain hanging from the helicopter down to the
+ * ground, which answers "how high?" but flattens the flight into a wall.
+ *
+ * This builds the path itself — a box-section tube centred on the altitude, so
+ * a tilted camera shows the real arc of each flight hanging over the terrain.
+ * Vertical half-thickness and horizontal half-width are equal, in TRUE Mars
+ * metres, so the tube reads as square in section rather than as a ribbon seen
+ * edge-on.
+ *
+ * One subtlety worth stating, because it is the same trap the ribbon hit in
+ * spike S3: horizontal sizes are in DEGREES on a grid inflated by SCALE, so the
+ * width is multiplied by SCALE; vertical sizes are true Mars metres and must
+ * NOT be, because global-state vscale is the only thing that scales them.
+ */
+function buildTrackFeatures(alt) {
+  const n = alt.t.length;
+  if (n < 2) return [];
+  const midLat = alt.lat[Math.floor(n / 2)] ?? alt.lat[0];
+  const wDeg = (TRACK_WIDTH_M * SCALE) / (M_PER_DEG_LAT * Math.cos((midLat * Math.PI) / 180));
+  const half = wDeg / 2;
+  const ref = manifest.dem.elev_min;
+  const feats = [];
+  for (let i = 0; i < n - 1; i++) {
+    const lon0 = alt.lon[i];
+    const lat0 = alt.lat[i];
+    const lon1 = alt.lon[i + 1];
+    const lat1 = alt.lat[i + 1];
+    if (lon0 === lon1 && lat0 === lat1) continue;
+    const midAgl = (alt.agl[i] + alt.agl[i + 1]) / 2;
+    const midGnd = (alt.gnd[i] + alt.gnd[i + 1]) / 2;
+    /* Hug the altitude: base and top straddle agl by half the tube thickness.
+     * ribbonExtent()'s `hover` branch already expresses exactly this shape, but
+     * at the replay hexagon's 3 m half-extent; TRACK_HALF_M is the slimmer one
+     * a path wants, so the arithmetic is inlined rather than adding a third
+     * meaning to that function's flag. */
+    const base = RIBBON_MODE === 'absolute'
+      ? midGnd + midAgl - TRACK_HALF_M - ref
+      : midAgl - TRACK_HALF_M;
+    const top = RIBBON_MODE === 'absolute'
+      ? midGnd + midAgl + TRACK_HALF_M - ref
+      : midAgl + TRACK_HALF_M;
+    feats.push({
+      type: 'Feature',
+      properties: { kind: 'track', agl: midAgl, gnd: midGnd, base_m: base, top_m: top },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [lon0 - half, lat0], [lon1 - half, lat1],
+          [lon1 + half, lat1], [lon0 + half, lat0],
+          [lon0 - half, lat0],
+        ]],
+      },
+    });
+  }
+  return feats;
+}
+
+function pushTrackSource() {
+  const map = APP.map;
+  const src = map && map.getSource('heli-track');
+  if (!src) return;
+  src.setData({ type: 'FeatureCollection', features: trackFeatures });
+}
+
+function setTrack3DVisible(on) {
+  const map = APP.map;
+  if (!map || !map.getLayer('heli-track-3d')) return;
+  map.setLayoutProperty('heli-track-3d', 'visibility', on ? 'visible' : 'none');
+  if (on) pushTrackSource();
+  APP.emit('layers', {});
+}
+
 /** The floating-heli hexagon + 1 m leader quad shown during replay (§4.4). */
 function buildHoverFeatures(sample) {
   const ref = manifest.dem.elev_min;
@@ -599,6 +685,12 @@ function clearRibbonSource() {
   const map = APP.map;
   const src = map && map.getSource('heli-ribbon');
   if (src) src.setData({ type: 'FeatureCollection', features: [] });
+  /* E3: the floating path is per-flight too, so it clears with the ribbon —
+   * otherwise deselecting a flight leaves last flight's tube hanging in the
+   * air over the new one. */
+  trackFeatures = [];
+  const tsrc = map && map.getSource('heli-track');
+  if (tsrc) tsrc.setData({ type: 'FeatureCollection', features: [] });
 }
 
 function ribbonLayerVisible() {
@@ -614,12 +706,18 @@ function setRibbonVisible(on) {
 }
 
 function updateRibbonAvailabilityUI() {
-  const ck = cardHost && cardHost.querySelector('#ing-ribbon-toggle');
-  if (!ck) return;
   const on3d = !!(APP.get3D && APP.get3D());
-  if (!on3d && ck.checked) {
+  const ck = cardHost && cardHost.querySelector('#ing-ribbon-toggle');
+  if (ck && !on3d && ck.checked) {
     ck.checked = false;
     setRibbonVisible(false);
+  }
+  /* E3: turning 3D off must drop the floating path too, or it collapses onto
+   * the ground plane and reads as a stray magenta smear across the terrain. */
+  const tk = cardHost && cardHost.querySelector('#ing-track-toggle');
+  if (tk && !on3d && tk.checked) {
+    tk.checked = false;
+    setTrack3DVisible(false);
   }
 }
 
@@ -830,6 +928,11 @@ async function fetchAndBuildChart(f) {
   chart = chartHost ? buildChart(chartHost, alt) : null;
   ribbonBaseFeatures = buildRibbonFeatures(alt);
   if (ribbonLayerVisible()) pushRibbonSource();
+  /* E3: the floating path is built from the same samples in the same pass —
+   * it costs one extra loop over ~114 points and guarantees the tube and the
+   * ribbon can never describe different flights. */
+  trackFeatures = buildTrackFeatures(alt);
+  if (layerVisible('heli-track-3d')) pushTrackSource();
   if (replayBtn) { replayBtn.disabled = false; replayBtn.textContent = '▶ Replay'; }
 }
 
@@ -882,6 +985,31 @@ function wireCardControls(f) {
       });
     }
   }
+
+  /* E3 — the floating flight path. Same shape as the ribbon control above,
+   * including the "turn on 3D first" guard: a fill-extrusion with no terrain
+   * under it draws flat on the ground plane and looks like a bug rather than a
+   * flight. Wired separately rather than folded into the ribbon's handler so
+   * either can be shown without the other — the ribbon answers "how high", the
+   * path answers "what shape", and they are legitimately useful apart. */
+  const trackCk = cardHost.querySelector('#ing-track-toggle');
+  const trackWrap = cardHost.querySelector('#ing-track-wrap');
+  if (trackCk) {
+    if (!APP.map || !APP.map.getLayer('heli-track-3d')) {
+      trackCk.disabled = true;
+      if (trackWrap) trackWrap.title = '3D flight path unavailable in this build.';
+    } else {
+      trackCk.checked = layerVisible('heli-track-3d');
+      trackCk.addEventListener('change', () => {
+        if (trackCk.checked && !(APP.get3D && APP.get3D())) {
+          trackCk.checked = false;
+          toast('Turn on 3D to see the flight path at altitude.', { kind: 'warn' });
+          return;
+        }
+        setTrack3DVisible(trackCk.checked);
+      });
+    }
+  }
 }
 
 function renderCard() {
@@ -923,6 +1051,11 @@ function renderCard() {
     '</div>' +
     `<label class="toggle" id="ing-ribbon-wrap"${LITE ? ' hidden' : ''}>` +
     '<input type="checkbox" id="ing-ribbon-toggle" />Show 3D altitude ribbon</label>' +
+    /* E3: the flight path itself, at altitude. Listed after the ribbon
+     * because the ribbon is the established control and this is the new
+     * one; both are lite-omitted for the same reason (fill-extrusion). */
+    `<label class="toggle" id="ing-track-wrap"${LITE ? ' hidden' : ''}>` +
+    '<input type="checkbox" id="ing-track-toggle" />Show 3D flight path</label>' +
     `<p class="hint" id="ing-lite-note-card"${LITE ? '' : ' hidden'}>` +
     'Lite mode: the 3D altitude ribbon is off — ground track and chart only.</p>';
 
