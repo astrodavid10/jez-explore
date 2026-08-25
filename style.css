@@ -533,13 +533,61 @@ body.shot /* E1 (2026-08-25): the ~60 lines of attribution styling that stood he
 @media (max-width: 899px) {
   #app { grid-template-columns: 1fr; grid-template-rows: 1fr; }
 
-  /* D7 (2026-08-24) — one 3D control on phones, not two. The topbar carries
-     #btn-3d-mobile and #map-tools carries #btn-3d; on a phone both were on
-     screen at once, 60 px apart, doing exactly the same thing (map.js keeps
-     their aria-pressed in step, so they even looked identical). The topbar one
-     wins: it is in the thumb's reach and it does not sit on the terrain.
-     Hiding rather than removing keeps map.js's two-button wiring untouched. */
-  #map-tools #btn-3d { display: none; }
+  /* E4 (2026-08-25) — ONE row of controls across the top, nothing on the map.
+     David: "if we have that menu bar up top, let's put all the clickable items
+     across the top, or get rid of it and keep them all top right."
+
+     Taking the first option. #map-tools stops being a vertical stack floating
+     over the terrain and becomes a horizontal group pinned INSIDE the topbar's
+     band, hard right. Together with the ☰ on the left that is a single 44 px
+     strip holding every control on the screen, and the map underneath is clean.
+
+     This reverses D7's choice of WHICH duplicate 3D button survives. D7 kept
+     the topbar's one because #map-tools sat on the terrain and the topbar did
+     not; now that the tools ARE the topbar, keeping them as one group beats
+     splitting 3D away from its four siblings. map.js's two-button wiring is
+     untouched either way — only which one is display:none changes. */
+  #btn-3d-mobile { display: none; }
+
+  #map-tools {
+    position: fixed;
+    top: var(--safe-t);
+    right: 4px;
+    height: var(--topbar-h);
+    z-index: 9;                 /* above #topbar's own background */
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* The exaggeration panel can no longer stack under the buttons — they are a
+     row now — so it hangs below the bar as a floating card, right-aligned to
+     the button that opened it. */
+  #map-tools #exag-wrap {
+    position: absolute;
+    top: calc(var(--topbar-h) - 2px);
+    right: 0;
+    width: 210px;
+  }
+
+  /* The tools stay a full 44 px square — D2 measured every control on this app
+     to that standard and it is not worth trading back for title width. The sums
+     fit: on a 360 px phone the worst case is ☰ (44) + 5 tools (5×44) + gaps
+     (~24) = 288, leaving ~72 px of title, which the ellipsis below handles.
+     Only the horizontal padding and type size come down. */
+  #map-tools .tool {
+    padding: 0 6px;
+    font-size: 11.5px;
+  }
+
+  /* The title yields first — the app name is already at the top of the sheet,
+     so it is the one thing in this bar that is repeated elsewhere. */
+  .topbar-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   /* D10: below the mobile topbar, which overlays the top of the map. */
   #brand-mark { top: calc(var(--topbar-h) + var(--safe-t) + 8px); }
@@ -571,7 +619,9 @@ body.shot /* E1 (2026-08-25): the ~60 lines of attribution styling that stood he
   .topbar-title { flex: 1 1 auto; font-size: 14px; font-weight: 600; }
 
   #map-wrap { grid-column: 1; grid-row: 1; }
-  #map-tools { top: calc(var(--topbar-h) + var(--safe-t) + 8px); }
+  /* E4: landscape keeps the same single top strip as portrait — the rule
+     that used to push #map-tools below the bar would have undone it. */
+  #map-tools { top: var(--safe-t); }
   /* Back to +8 (E1, 2026-08-25). This was +44 to clear the 32 px attribution
      box that used to sit at peek-h − 4; with the credit box removed from the
      map there is nothing left to clear, so the readout and scale bar reclaim
@@ -658,6 +708,10 @@ body.shot /* E1 (2026-08-25): the ~60 lines of attribution styling that stood he
  * slides off-screen instead of shrinking) is unaffected.
  * ------------------------------------------------------------------------ */
 @media (max-width: 899px) and (min-height: 501px) {
+  /* E4 (2026-08-25): 148 -> 72. The peek row is now grip (14) + one
+     44 px slider row + 8 px padding + the safe-area inset. */
+  :root { --peek-h: calc(72px + var(--safe-b)); }
+
   body[data-detent="peek"] #dock-head button.primary,
   body[data-detent="peek"] #tabs,
   body[data-detent="peek"] #dock-foot { display: none; }
@@ -671,17 +725,50 @@ body.shot /* E1 (2026-08-25): the ~60 lines of attribution styling that stood he
   body[data-detent="peek"] #panels > section.panel { display: none; }
   body[data-detent="peek"] section.panel > .panel-title { display: none; }
 
-  /* V2 fix (2026-08-23): 148 px of peek has to CONTAIN the sol slider, and on a
-     390x844 phone it did not — the 44 px slider ran from y 816 to y 860, i.e.
-     16 px past the bottom of the viewport, so the one control that must always
-     be a thumb away was clipped. Trim the chrome above it (grab handle, sol
-     type size, the gaps between the three readout lines) rather than growing
-     the detent or dropping the date / driven-distance lines. */
-  body[data-detent="peek"] #dock-handle { height: 16px; }
-  body[data-detent="peek"] #dock-head { padding-bottom: 2px; }
-  body[data-detent="peek"] #tl-sol { font-size: 22px; }
-  body[data-detent="peek"] #tl-date { margin: 0 0 2px; }
-  body[data-detent="peek"] section.panel > .panel-body > .row { margin-bottom: 4px; }
+  /* E4 (2026-08-25) — the closed drawer is now genuinely minimal.
+     David: "the menu drawer at the bottom also takes up a lot of real estate
+     and should be minimized when it isn't open."
+
+     Peek went 148 px -> 72 px (--peek-h, mobile override below) by collapsing
+     the clock from four stacked rows (SOL / date / slider / play+speed) onto
+     ONE row: the sol number and the slider side by side. Everything else in
+     the head — app title, subtitle, tour button, tabs, play/speed — is hidden
+     until the sheet is actually opened.
+
+     What survives is deliberate. The sol slider stays, at its full 44 px touch
+     height, because it is the one control that must always be a thumb away
+     (the V2 fix of 2026-08-23 established that, and dropping it here would
+     undo that work rather than build on it). The rest is one drag away.
+
+     Net: the map gets 76 px of phone screen back, and #readout follows for
+     free because its offset is expressed in --peek-h. */
+  body[data-detent="peek"] #dock-handle { height: 14px; }
+  body[data-detent="peek"] #dock-head {
+    padding: 0 10px 4px;
+    border-bottom: 0;
+  }
+  body[data-detent="peek"] #dock-head .titles { display: none; }
+  body[data-detent="peek"] #clock { margin: 0; }
+  body[data-detent="peek"] #clock .clock-head {
+    display: contents;          /* let SOL sit directly in the flex row below */
+  }
+  body[data-detent="peek"] #clock #tl-date,
+  body[data-detent="peek"] #clock .clock-controls { display: none; }
+  body[data-detent="peek"] #clock {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  body[data-detent="peek"] #clock #tl-sol {
+    font-size: 17px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  body[data-detent="peek"] #clock #tl-slider {
+    flex: 1 1 auto;
+    width: auto;
+    margin: 0;
+  }
 }
 
 /* ===========================================================================
