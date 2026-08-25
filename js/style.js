@@ -407,7 +407,12 @@ function buildLayers(manifest, demSource, opts) {
       const level = id.startsWith('contour-fine-minor') ? 0 : 1;
       layers.push({
         id, type: 'line', source: 'contours-fine', 'source-layer': 'contours',
-        minzoom: 14,
+        /* F5 (2026-08-25): 14 -> 12. At 14 the "10 m" interval drew nothing at
+         * all below z14, because the interval control hides the coarse group
+         * whenever fine is selected. The DEM posting (9.65 m at
+         * contour_maxzoom 13) does not change with display zoom, so these lines
+         * are exactly as truthful at z12 as at z16. */
+        minzoom: 12,
         filter: ['==', ['get', CONTOURS.shared.levelKey], level],
         layout: { ...V(false), 'line-join': 'round', 'line-cap': 'round' },
         paint: contourPaint(id, contourPreset),
@@ -569,6 +574,29 @@ function buildLayers(manifest, demSource, opts) {
     });
   }
 
+  /* 20c/20d — F3 (2026-08-25): Ginny's airfields, given the same affordances
+   * Percy's waypoints have. A dot you can see and a 16 px invisible target you
+   * can actually hit with a finger, both sol-filtered so they accumulate as the
+   * mission runs. Drawn in Ginny's violet with the same dark stroke idiom as
+   * his rose dots, so the two vehicles' point markers read as a matched pair. */
+  layers.push({
+    id: 'airfield-dot', type: 'circle', source: 'heli-airfields',
+    filter: SOL_DONE,
+    layout: V(true),
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 5],
+      'circle-color': PALETTE.heli,
+      'circle-stroke-color': PALETTE.heliCase,
+      'circle-stroke-width': 1,
+    },
+  });
+  layers.push({
+    id: 'airfield-hit', type: 'circle', source: 'heli-airfields',
+    filter: SOL_DONE,
+    layout: V(true),
+    paint: { 'circle-radius': 16, 'circle-color': 'rgba(0,0,0,0)' },
+  });
+
   /* 21 — end-of-drive parking spots */
   layers.push({
     id: 'waypoints-dot', type: 'circle', source: 'waypoints',
@@ -700,7 +728,9 @@ function buildLayers(manifest, demSource, opts) {
     id: 'airfield-label', type: 'symbol', source: 'heli-airfields',
     minzoom: 13,
     layout: {
-      ...V(false),
+      /* F3: visible by default now, with the dots. It was V(false) because it
+       * only ever appeared inside the deleted "Ingenuity mode". */
+      ...V(true),
       'text-field': ['get', 'name'],
       'text-font': ['Noto Sans Regular'],
       'text-size': 10.5,

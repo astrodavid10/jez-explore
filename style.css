@@ -516,10 +516,71 @@ body.shot #toasts { display: none !important; }
 body.shot #app { grid-template-columns: 1fr; }
 body.shot #map-wrap { grid-column: 1; }
 /* Attribution shrinks but never disappears — see the note above. */
-body.shot /* E1 (2026-08-25): the ~60 lines of attribution styling that stood here are
-   gone with the control itself. map.js no longer adds a MapLibre
-   AttributionControl — the credits live in the About panel now, in full,
-   instead of ellipsised into one line over the terrain. */
+body.shot /* E1 (2026-08-25): the attribution styling that stood here is gone with the
+   control itself. map.js no longer adds a MapLibre AttributionControl — the
+   credits live in the About panel now, in full, instead of ellipsised into one
+   line over the terrain.
+
+   F6 (2026-08-25) — RESTORED BELOW, and a lesson. The E1 removal was done by
+   slicing style.css between two string offsets, and the popup theming block
+   sat INSIDE that span: everything from .maplibregl-popup through the .pop-*
+   content classes went out with the attribution rules. MapLibre's own popup
+   defaults are white-on-white against this dark theme, so every popup opened
+   as the "empty window" David reported — the elevation readout, the waypoint
+   popup and the sample popup all rendered their content invisibly.
+
+   Recovered verbatim from commit 6015ac19 (the last commit before E1) with the
+   attribution rules filtered out, so nothing that was deleted on purpose comes
+   back. Never delete CSS by byte range again: delete by rule. */
+
+/* ---------------------------------------------------------------------------
+ * MapLibre popup + control theming (the defaults are white)
+ * ------------------------------------------------------------------------ */
+.maplibregl-popup { font: 13px/1.45 system-ui, sans-serif; }
+.maplibregl-popup-content {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 11px 13px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6);
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--panel); }
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip { border-bottom-color: var(--panel); }
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: var(--panel); }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--panel); }
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip { border-top-color: var(--panel); }
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: var(--panel); }
+.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--panel); }
+.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--panel); }
+.maplibregl-popup-close-button {
+  width: 30px; height: 30px;
+  color: var(--muted);
+  font-size: 18px;
+  background: none;
+  border-radius: 0 6px 0 0;
+}
+.maplibregl-popup-close-button:hover { background: var(--panel2); color: #fff; }
+/* popup content classes used by the popup builders */
+.pop-head { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.pop-title { font-size: 15px; margin: 1px 0 5px; }
+.pop-row { margin: 2px 0; }
+.pop-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 8px 0 6px; }
+.pop-thumbs img, .pop-thumbs .sk {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+.pop-links { display: flex; flex-direction: column; gap: 3px; font-size: 12px; margin-top: 6px; }
+.maplibregl-ctrl-group {
+  background: rgba(28, 28, 31, 0.92);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.maplibregl-ctrl-group button + button { border-top: 1px solid var(--border); }
 
 /* Markers. v6 adds .maplibregl-marker-covered when a marker is behind terrain
    (opacityWhenCovered) — dim it further so it reads as "behind the hill". */

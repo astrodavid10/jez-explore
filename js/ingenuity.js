@@ -137,6 +137,10 @@ let replayRAF = 0;
 let replayLastTs = 0;
 let replaySimT = 0;
 let replayMarker = null;
+/** F2: the PERSISTENT Ginny marker — Percy has had one since day one. */
+let heliMarker = null;
+/** F4: follow-helicopter, mutually exclusive with timeline.js's follow-rover. */
+let followHeli = false;
 
 /* ---------------------------------------------------------------------------
  * Small pure helpers
@@ -288,18 +292,97 @@ function syncModeFromLayers() {
  * distinct arrival airfield, named and positioned from the flight that landed
  * there.
  * ------------------------------------------------------------------------ */
+/**
+ * F2 (2026-08-25, David: "Ingenuity does not have a stylized little marker like
+ * Perseverance does and we should make something for it").
+ *
+ * The art existed — `assets/heli.svg`, and makeMarker('heli', ...) — but it was
+ * only ever created as `replayMarker` during a flight replay and removed the
+ * moment replay stopped. So Percy had a permanent marker on the map and Ginny
+ * had one for a few seconds at a time. This gives her the same standing
+ * presence: a marker at wherever she is for the current sol.
+ *
+ * "Where Ginny is" at sol S = the landing site of the last flight she completed
+ * at or before S. Before flight 1 (sol 58) she has not flown, so the marker is
+ * hidden rather than parked at 0,0 — she was folded under the rover then, and
+ * showing her flying on sol 0 would be a lie.
+ */
+function heliPositionAtSol(sol) {
+  let best = null;
+  for (const f of flightsIndex) {
+    if (!Number.isFinite(f.sol) || f.sol > sol) continue;
+    if (!Number.isFinite(f.lon) || !Number.isFinite(f.lat)) continue;
+    if (!best || f.sol > best.sol || (f.sol === best.sol && f.flight > best.flight)) best = f;
+  }
+  return best;
+}
+
+function updateHeliMarker() {
+  if (!APP || !APP.map || typeof APP.makeMarker !== 'function') return;
+  const at = heliPositionAtSol(currentSol);
+  if (!at) {
+    if (heliMarker) { heliMarker.remove(); heliMarker = null; }
+    return;
+  }
+  if (!heliMarker) {
+    heliMarker = APP.makeMarker('heli', [at.lon, at.lat]);
+    heliMarker.addTo(APP.map);
+    const el = heliMarker.getElement && heliMarker.getElement();
+    if (el) el.title = `Ingenuity — after flight ${at.flight} (sol ${at.sol})`;
+  } else {
+    heliMarker.setLngLat([at.lon, at.lat]);
+    const el = heliMarker.getElement && heliMarker.getElement();
+    if (el) el.title = `Ingenuity — after flight ${at.flight} (sol ${at.sol})`;
+  }
+  maybeFollowHeli();
+}
+
+/**
+ * F4 (2026-08-25, David: "we have a follow rover toggle but not follow
+ * helicopter (these should be mutually exclusive from one another)").
+ *
+ * The two live in different modules, so exclusivity is arbitrated on the event
+ * bus rather than by one module reaching into the other: whichever is switched
+ * on emits `follow`, and the other stands down when it hears a `follow` naming
+ * someone else. That keeps timeline.js and ingenuity.js independent and means a
+ * third follower could be added later without touching either.
+ */
+function setFollowHeli(on) {
+  followHeli = !!on;
+  const ck = panelBody && panelBody.querySelector('#ing-follow');
+  if (ck) ck.checked = followHeli;
+  if (followHeli) {
+    APP.emit('follow', { who: 'heli' });
+    maybeFollowHeli(true);
+  }
+}
+
+function maybeFollowHeli(force = false) {
+  if (!followHeli || !heliMarker || !APP.map) return;
+  APP.map.easeTo({ center: heliMarker.getLngLat(), duration: force ? 600 : 400, essential: true });
+}
+
 function buildAirfields() {
   const map = APP.map;
   const src = map && map.getSource('heli-airfields');
   if (!src) return;
+  /* F3 (2026-08-25): carry `sol` so the airfield dots can be SOL_DONE-filtered
+   * exactly like Percy's waypoints — an airfield appears when Ginny first
+   * lands there, not from sol 0. Keep the EARLIEST sol per site: a field she
+   * used four times should appear on the first visit, not the last. */
   const seen = new Map();
   for (const f of flightsIndex) {
-    if (f.to && !seen.has(f.to)) seen.set(f.to, [f.lon, f.lat]);
+    if (!f.to) continue;
+    const prev = seen.get(f.to);
+    if (!prev) seen.set(f.to, { coords: [f.lon, f.lat], sol: f.sol, flight: f.flight });
+    else if (Number.isFinite(f.sol) && f.sol < prev.sol) {
+      seen.set(f.to, { coords: [f.lon, f.lat], sol: f.sol, flight: f.flight });
+    }
   }
-  const features = [...seen.entries()].map(([name, coords]) => ({
+  const features = [...seen.entries()].map(([name, v]) => ({
     type: 'Feature',
-    properties: { name },
-    geometry: { type: 'Point', coordinates: coords },
+    properties: { name, sol: v.sol, flight: v.flight },
+    geometry: { type: 'Point', coordinates: v.coords },
   }));
   src.setData({ type: 'FeatureCollection', features });
 }
@@ -896,12 +979,22 @@ function buildIngenuityPanel(body) {
     '<p class="veh-header" id="ing-header">Loading Ingenuity flight index…</p>' +
     `<p class="hint" id="ing-lite-note"${LITE ? '' : ' hidden'}>` +
     'Lite mode: ground track and chart only — the 3D altitude ribbon is off.</p>' +
+    /* F4: Ginny's half of the follow pair, placed exactly where Percy's sits
+     * in his panel so the two vehicles keep reading as peers. */
+    '<label class="toggle">' +
+    '<input type="checkbox" id="ing-follow" /> Follow helicopter</label>' +
     '<div class="ing-card" id="ing-card" hidden></div>' +
     '<div class="veh-list" id="ing-list"><p class="panel-empty">Loading…</p></div>';
 
   headerEl = body.querySelector('#ing-header');
   listEl = body.querySelector('#ing-list');
   cardHost = body.querySelector('#ing-card');
+
+  const followCk = body.querySelector('#ing-follow');
+  if (followCk) {
+    followCk.checked = followHeli;
+    followCk.addEventListener('change', () => setFollowHeli(followCk.checked));
+  }
 
   if (flightsIndex.length) {
     renderHeader();
@@ -992,11 +1085,19 @@ export async function init(app) {
 
   APP.on('sol', (d) => {
     const sol = extractNumber(d, 'sol');
-    if (sol !== null) { currentSol = Math.round(sol); renderList(); }
+    if (sol !== null) { currentSol = Math.round(sol); renderList(); updateHeliMarker(); }
   });
   APP.on('hash:sol', (d) => {
     const sol = extractNumber(d, 'sol');
-    if (sol !== null) { currentSol = Math.round(sol); renderList(); }
+    if (sol !== null) { currentSol = Math.round(sol); renderList(); updateHeliMarker(); }
+  });
+  /* F4: stand down when somebody else claims the camera. */
+  APP.on('follow', (d) => {
+    if (d && d.who && d.who !== 'heli' && followHeli) {
+      followHeli = false;
+      const ck = panelBody && panelBody.querySelector('#ing-follow');
+      if (ck) ck.checked = false;
+    }
   });
   APP.on('hash:flight', (d) => {
     const flight = extractNumber(d, 'flight');
@@ -1028,6 +1129,7 @@ export async function init(app) {
     buildAirfields();
     renderHeader();
     renderList();
+    updateHeliMarker();
     drainPendingBookmarkFlight();
   });
 
@@ -1040,6 +1142,7 @@ export async function init(app) {
     buildAirfields();
     renderHeader();
     renderList();
+    updateHeliMarker();
     if (currentFlight && flightById.has(currentFlight)) {
       selectFlight(currentFlight, { fromHash: true });
     }

@@ -114,6 +114,14 @@ export const LAYER_IDS = [
   'heli-path-sel-case',   // 19a casing under heli-path-sel
   'heli-path-sel',        // 19  selected flight, emphasized
   'heli-ribbon',          // 20  fill-extrusion altitude ribbon
+  /* F3 (2026-08-25, David: "Ginny does not have waypoints where Percy does and
+   * I think the Waypoints are useful"). Percy's end-of-drive parking spots had
+   * dots since day one; Ginny's airfields existed only as a text label at
+   * z13+, so there was nothing to see or tap. Same treatment as his: a dot, a
+   * fat invisible hit target, and the same SOL_DONE filter so airfields appear
+   * as the timeline reaches them. Additive ids. */
+  'airfield-dot',         // 20c Ingenuity airfields (landing sites)
+  'airfield-hit',         // 20d invisible touch target for the above
   'waypoints-dot',        // 21  end-of-drive parking spots
   'waypoints-hit',        // 22  invisible 16 px touch target for the above
   'samples-dot',          // 23  sample tubes
@@ -159,6 +167,8 @@ export const HASH_KEYS = {
      * correct — `on=heli` from a QR code toggles the casing too, so a stale
      * link can never render a dark casing with no bright line on top of it. */
     heli:   ['heli-path-case', 'heli-path', 'heli-path-sel-case', 'heli-path-sel'],
+    /* F3: Ginny's airfields toggle as their own group, mirroring `wp`. */
+    af:     ['airfield-dot', 'airfield-hit', 'airfield-label'],
     rib:    ['heli-ribbon'],
   },
   /* value type per scalar key: 'int' | 'float' | 'bool' */
@@ -361,11 +371,25 @@ export const CONTOURS = {
     8: [500, 2000], 9: [200, 1000], 10: [100, 500], 11: [50, 250],
     12: [25, 100], 13: [25, 100], 14: [25, 100], 15: [25, 100], 16: [25, 100],
   },
-  /* Fine stays as designed: contours are generated from the DEM at
-   * contour_maxzoom 13 (the gapless ceiling — z14+ DEM covers only the 1 m
-   * HiRISE footprint), so 9.65 m/px is the posting floor and a 10 m interval is
-   * already at the resolution limit. Denser here would draw noise. */
-  fine:   { 13: [20, 100], 14: [10, 50], 15: [10, 50], 16: [10, 50], 17: [10, 50] },
+  /* Contours are generated from the DEM at contour_maxzoom 13 (the gapless
+   * ceiling — z14+ DEM covers only the 1 m HiRISE footprint), so 9.65 m/px is
+   * the posting floor and a 10 m interval is already at the resolution limit.
+   * Denser than 10 m would draw noise.
+   *
+   * F5 (2026-08-25, David: "the 10m contours only work when we are really
+   * really up close"). Understated: below z14 the 10 m setting drew NOTHING.
+   * The fine LAYERS carried minzoom 14, and the interval control hides the 50 m
+   * group whenever 10 m is selected — so choosing 10 m at crater zoom turned
+   * the coarse lines off and had nothing to turn on. Measured before the fix:
+   * z11/z12/z13/z13.5 all rendered 0 fine and 0 coarse features.
+   *
+   * Two changes. The table starts at 12 (20 m there, 10 m from 13), and
+   * style.js drops the fine minzoom 14 -> 12. The DEM posting does not change
+   * with display zoom, so 10 m lines are exactly as truthful at z13 as at z16;
+   * only their density on screen changes, which is what the interval step at
+   * z12 is for. Below z12 the control now falls back to the 50 m group rather
+   * than showing an empty map — see layers.js. */
+  fine:   { 12: [20, 100], 13: [10, 50], 14: [10, 50], 15: [10, 50], 16: [10, 50], 17: [10, 50] },
   shared: { elevationKey: 'ele', levelKey: 'level', contourLayer: 'contours', overzoom: 1, subsampleBelow: 100 },
 };
 
@@ -397,18 +421,37 @@ export const CONTOUR_STYLE = {
    * the reason the default map's contours dissolved into the dust. It is now a
    * low-chroma pale azure: the same ~200 deg anchor as Bold, just desaturated
    * and thinner, so Subtle and Bold are one contour identity at two weights
-   * rather than two different colours, and the default map belongs to the same
-   * cool palette as the two vehicles. */
+   * rather than two different colours.
+   *
+   * F1 (2026-08-25, David: "the Subtle vs Bold Contour line buttons seem to do
+   * the opposite things, or at least don't work correctly"). The buttons were
+   * wired correctly — measured, Bold really did paint wider and brighter — but
+   * E6b had overshot Subtle: major lines at #d6ecf8 (near-WHITE) at up to 0.95
+   * opacity on a 3.8 px casing. Against ochre terrain a near-white line at 0.95
+   * is about as loud as a contour can be, so "Subtle" often READ heavier than
+   * Bold's saturated but narrower #6fd3f7. The presets had converged, and a
+   * control whose two states look the same is indistinguishable from a broken
+   * one.
+   *
+   * Re-separated on the two axes the eye actually uses, holding the hue anchor
+   * fixed so this is still one identity at two weights:
+   *
+   *     width    Subtle 0.6-1.6 px   ->  Bold 1.2-3.8 px    (about 2x)
+   *     opacity  Subtle 0.40-0.75    ->  Bold 0.95-1.00
+   *     value    Subtle muted azure  ->  Bold bright azure + near-white index
+   *
+   * Subtle is now genuinely quiet — present, cool, clearly not tan, but it
+   * recedes behind the two vehicles the way the E6b hierarchy intended. */
   subtle: {
-    minor:     { color: '#9fc4dc', w: [0.7, 1.1], o: [0.60, 0.82] },
-    major:     { color: '#d6ecf8', w: [1.3, 2.0], o: [0.75, 0.95] },
-    minorCase: { color: '#0b141c', w: [1.7, 2.5], o: [0.34, 0.34] },
-    majorCase: { color: '#080f16', w: [2.6, 3.8], o: [0.44, 0.44] },
-    fineMinor:     { color: '#9fc4dc', w: [0.5, 0.9], o: [0.78, 0.78] },
-    fineMajor:     { color: '#d6ecf8', w: [1.0, 1.6], o: [0.90, 0.90] },
-    fineMinorCase: { color: '#0b141c', w: [1.5, 2.1], o: [0.34, 0.34] },
-    fineMajorCase: { color: '#080f16', w: [2.2, 3.2], o: [0.44, 0.44] },
-    label: { color: '#dbeaf5', halo: '#08131c', haloWidth: 1.6, size: 10 },
+    minor:     { color: '#8fb4cc', w: [0.6, 1.0], o: [0.40, 0.58] },
+    major:     { color: '#b6d6ea', w: [1.0, 1.6], o: [0.55, 0.75] },
+    minorCase: { color: '#0b141c', w: [1.3, 1.9], o: [0.20, 0.20] },
+    majorCase: { color: '#080f16', w: [2.0, 2.9], o: [0.28, 0.28] },
+    fineMinor:     { color: '#8fb4cc', w: [0.5, 0.8], o: [0.52, 0.52] },
+    fineMajor:     { color: '#b6d6ea', w: [0.9, 1.4], o: [0.68, 0.68] },
+    fineMinorCase: { color: '#0b141c', w: [1.1, 1.6], o: [0.20, 0.20] },
+    fineMajorCase: { color: '#080f16', w: [1.8, 2.5], o: [0.28, 0.28] },
+    label: { color: '#c2d8e6', halo: '#08131c', haloWidth: 1.4, size: 10 },
   },
   /* Bold is LIGHT BLUE, not cream (David, 2026-08-24: "make it a nice light
    * blue color to really pop"). Blue is the direct complement of Jezero's
@@ -420,15 +463,15 @@ export const CONTOUR_STYLE = {
    * blue-black rather than neutral so the pairing does not read as two
    * unrelated colors at small sizes. Kin to the house accent #5ad0ff. */
   bold: {
-    minor:     { color: '#6fd3f7', w: [0.9, 1.5], o: [0.88, 0.88] },
-    major:     { color: '#cdeeff', w: [1.8, 2.8], o: [1.00, 1.00] },
-    minorCase: { color: '#07131c', w: [2.0, 3.4], o: [0.55, 0.55] },
-    majorCase: { color: '#050e15', w: [3.2, 5.0], o: [0.72, 0.72] },
-    fineMinor:     { color: '#6fd3f7', w: [0.7, 1.2], o: [0.88, 0.88] },
-    fineMajor:     { color: '#cdeeff', w: [1.4, 2.2], o: [1.00, 1.00] },
-    fineMinorCase: { color: '#07131c', w: [1.8, 2.8], o: [0.55, 0.55] },
-    fineMajorCase: { color: '#050e15', w: [2.6, 4.0], o: [0.72, 0.72] },
-    label: { color: '#e6f6ff', halo: '#04101a', haloWidth: 2.0, size: 11 },
+    minor:     { color: '#6fd3f7', w: [1.2, 2.0], o: [0.95, 0.95] },
+    major:     { color: '#e6f7ff', w: [2.4, 3.8], o: [1.00, 1.00] },
+    minorCase: { color: '#07131c', w: [2.8, 4.6], o: [0.68, 0.68] },
+    majorCase: { color: '#050e15', w: [4.2, 6.6], o: [0.85, 0.85] },
+    fineMinor:     { color: '#6fd3f7', w: [1.0, 1.6], o: [0.95, 0.95] },
+    fineMajor:     { color: '#e6f7ff', w: [1.9, 3.0], o: [1.00, 1.00] },
+    fineMinorCase: { color: '#07131c', w: [2.4, 3.8], o: [0.68, 0.68] },
+    fineMajorCase: { color: '#050e15', w: [3.6, 5.4], o: [0.85, 0.85] },
+    label: { color: '#eaf8ff', halo: '#04101a', haloWidth: 2.2, size: 12.5 },
   },
 };
 
