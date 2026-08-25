@@ -41,7 +41,7 @@
  * ========================================================================== */
 
 import {
-  VIEW, TUNING, MARKERS, ATTRIBUTION, GLOBAL_STATE, LANDING, SCALE as SCALE_FALLBACK,
+  VIEW, TUNING, MARKERS, GLOBAL_STATE, LANDING, SCALE as SCALE_FALLBACK,
   PALETTE,
 } from './config.js';
 import { buildStyle, hillshadeExaggeration } from './style.js';
@@ -340,50 +340,43 @@ export async function createMap(app) {
    * animated move lands on its requested pitch to 0.00°, so the wrapper is
    * pure latency and one more thing to reason about. */
 
-  map.addControl(new maplibregl.AttributionControl({
-    compact: true,
-    customAttribution: ATTRIBUTION,
-  }), 'bottom-right');
-
   /* ---------------------------------------------------------------------
-   * Make the (i) button EXPAND the credits instead of hiding them.
+   * E1 (2026-08-25) — NO attribution control on the map.
    *
-   * 2026-08-24, reported from the live site: "what is the little info (i) at
-   * the bottom right? I'm not seeing anything in its box."
+   * David: "the info box in the bottom right is still hard to read and crowds
+   * the UI. let's remove it and move the data credits to the info section of
+   * menu."
    *
-   * The full credit string is 260 characters — 1545 px of text — and style.css
-   * caps it to one ellipsised line so it cannot wrap across the map or hang off
-   * a phone screen. That cap is right, but it left MapLibre's own toggle doing
-   * the only thing it knows how to do: hide that one clipped line, then show it
-   * again. So the (i) appeared to empty its own box and never revealed the
-   * three quarters of the NASA/ESA/DLR/USGS credits that were clipped off the
-   * right-hand edge. Those attributions are a condition of using the imagery,
-   * not decoration, so "unreadable but technically present" is not good enough.
+   * It had already been through one repair (2026-08-24): the credit string is
+   * 260 characters, style.css clipped it to one ellipsised line, and MapLibre's
+   * own toggle could only hide that clipped line and show it again — so the (i)
+   * appeared to empty its own box. That fix made it expand into a readable
+   * block, which worked, but a readable block in the corner of the map is still
+   * a block in the corner of the map. The honest conclusion is that a 260-char
+   * credit does not belong on the canvas at all.
    *
-   * Here the button keeps MapLibre's control permanently in its shown state and
-   * toggles our own `jz-attrib-open` class instead, which style.css renders as
-   * a wrapped, fully readable block. Capture (`true`) so this runs before
-   * MapLibre's own handler, and stopPropagation so its collapse never fires.
+   * The credits are NOT dropped — they are the full, unclipped Credits section
+   * of the About panel (the ⓘ tab), which is reachable from every screen and is
+   * where a reader would look for them. HRSC is ESA/DLR/FU Berlin under
+   * CC-BY-SA and NASA asks for courtesy credit; naming every source in a
+   * standing, always-available credits panel satisfies both. Nothing about the
+   * licence required the text to sit on top of the terrain.
+   *
+   * The per-source `attribution` strings in style.js are deliberately left in
+   * place: they cost nothing, they document each source at the point it is
+   * defined, and they are what any future control would read.
    * ------------------------------------------------------------------ */
-  const attribEl = map.getContainer().querySelector('.maplibregl-ctrl-attrib');
-  const attribBtn = attribEl && attribEl.querySelector('.maplibregl-ctrl-attrib-button');
-  if (attribEl && attribBtn) {
-    attribBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      /* MapLibre may have removed this on a previous click; keep it shown so
-       * the credit line never disappears entirely. */
-      attribEl.classList.add('maplibregl-compact-show');
-      const open = attribEl.classList.toggle('jz-attrib-open');
-      attribBtn.setAttribute('aria-expanded', String(open));
-      attribBtn.setAttribute('title', open ? 'Hide full credits' : 'Show full credits');
-    }, true);
-    attribBtn.setAttribute('aria-expanded', 'false');
-    attribBtn.setAttribute('title', 'Show full credits');
-    /* Belt and braces for hover: the whole string as a native tooltip. */
-    const inner = attribEl.querySelector('.maplibregl-ctrl-attrib-inner');
-    if (inner) inner.setAttribute('title', inner.textContent.trim());
-  }
+
+  /* REMOVED by the elevation-offset migration (docs/frontend-design.md §9.3):
+   * an easeTo/flyTo wrapper that re-asserted a collapsed pitch with a 250 ms
+   * ease. The collapse (spike S2: a requested 65° landing at ~46°) was
+   * MapLibre's `Camera._elevateCameraIfInsideTerrain()` rewriting the camera
+   * because an all-negative DEM made every camera look "inside the terrain".
+   * With the DEM encoded +4000 m that guard no longer fires. Re-measured over
+   * the 6 tilted bookmarks and all 8 tour stops with the wrapper deleted: every
+   * animated move lands on its requested pitch to 0.00°, so the wrapper is
+   * pure latency and one more thing to reason about. */
+
 
   /* REMOVED by the elevation-offset migration (docs/frontend-design.md §9.3):
    * a dynamic pitch ceiling that clamped maxPitch to 66 whenever terrain was on
@@ -505,6 +498,33 @@ export async function createMap(app) {
   const exagWrap = document.getElementById('exag-wrap');
   const exagInput = document.getElementById('exag');
   const exagOut = document.getElementById('exag-val');
+
+  const btnExag = document.getElementById('btn-exag');
+  const btnShot = document.getElementById('btn-shot');
+
+  /* E7: does the visitor want the exaggeration slider expanded? Starts closed —
+   * David's complaint was the space it takes, so the quiet default is the one
+   * that gives the map back. The button carries the current value so the
+   * information is never actually hidden, only the 3-line control is. */
+  let exagOpen = false;
+
+  /** E7 — one owner of both the button and the panel, so they cannot disagree. */
+  function syncExagUI() {
+    if (btnExag) {
+      btnExag.hidden = !terrainOn;
+      btnExag.textContent = `⇕ ${uiExag.toFixed(1)}×`;
+      btnExag.setAttribute('aria-pressed', String(exagOpen && terrainOn));
+      btnExag.setAttribute('aria-expanded', String(exagOpen && terrainOn));
+    }
+    if (exagWrap) exagWrap.hidden = !(terrainOn && exagOpen);
+  }
+
+  if (btnExag) {
+    btnExag.addEventListener('click', () => {
+      exagOpen = !exagOpen;
+      syncExagUI();
+    });
+  }
 
   function paintHillshade() {
     if (!map.getLayer('hillshade')) return;
@@ -643,7 +663,10 @@ export async function createMap(app) {
     applyTerrain();
     if (btn3d) btn3d.setAttribute('aria-pressed', String(terrainOn));
     if (btn3dMobile) btn3dMobile.setAttribute('aria-pressed', String(terrainOn));
-    if (exagWrap) exagWrap.hidden = !terrainOn;
+    /* E7 (2026-08-25): 3D controls whether the exaggeration control EXISTS;
+     * exagOpen controls whether it is expanded. Before E7 the slider simply
+     * appeared whenever terrain came on and there was no way to dismiss it. */
+    syncExagUI();
     if (o.ease !== false) {
       map.easeTo({
         pitch: terrainOn ? Math.min(VIEW.PITCH_3D, maxPitch) : 0,
@@ -674,6 +697,9 @@ export async function createMap(app) {
     uiExag = clampExag(v);
     if (exagInput) exagInput.value = String(uiExag);
     if (exagOut) exagOut.textContent = `${uiExag.toFixed(1)}×`;
+    /* E7: the collapsed button carries the value, so collapsing the slider
+     * hides the CONTROL without ever hiding the number it is set to. */
+    syncExagUI();
     /* One call keeps the Ingenuity ribbon glued to the terrain (§4.4). */
     map.setGlobalStateProperty(GLOBAL_STATE.VSCALE, SCALE * uiExag);
     if (terrainOn) map.setTerrain({ source: 'dem-terrain', exaggeration: SCALE * uiExag });

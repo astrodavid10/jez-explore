@@ -386,7 +386,7 @@ function renderPercyChart() {
   elements.chart.innerHTML =
     `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="veh-chart-svg" ` +
     `role="img" aria-label="Elevation along the traverse, ${Math.round(lo)} to ${Math.round(hi)} metres">` +
-    `<path d="${area}" fill="rgba(255,61,127,0.16)" stroke="none"></path>` +
+    `<path d="${area}" fill="rgba(255,92,200,0.18)" stroke="none"></path>` +
     `<path d="${line}" fill="none" stroke="${PALETTE.rover}" stroke-width="1.4"></path>` +
     `<line id="tl-playhead" x1="0" y1="${padT}" x2="0" y2="${H - padB}" ` +
     `stroke="#fff" stroke-width="1" stroke-dasharray="2,2" opacity="0.85"></line>` +

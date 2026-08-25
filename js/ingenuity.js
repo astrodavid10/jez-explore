@@ -595,7 +595,7 @@ function buildChart(host, alt) {
   svg.setAttribute('height', String(H));
   svg.setAttribute('class', 'ing-chart');
   svg.innerHTML =
-    `<path d="${area}" fill="rgba(46,230,200,0.18)" stroke="none"></path>` +
+    `<path d="${area}" fill="rgba(181,123,255,0.20)" stroke="none"></path>` +
     `<path d="${line}" fill="none" stroke="${PALETTE.heli}" stroke-width="1.4"></path>` +
     `<line id="ing-playhead" x1="0" y1="${padT}" x2="0" y2="${H - padB}" ` +
     `stroke="#fff" stroke-width="1" stroke-dasharray="2,2" opacity="0"></line>` +
@@ -952,8 +952,8 @@ function injectStyle() {
     .ing-row:hover, .ing-row.sel { background: var(--panel2, #25252a); }
     /* E6: the panel agrees with the map — these were --accent (chrome cyan),
        which no longer matches the turquoise Ginny is drawn in. */
-    .ing-row.sel { color: #fff; box-shadow: inset 2px 0 0 var(--heli, #2ee6c8); }
-    .ing-num { flex: 0 0 34px; color: var(--heli, #2ee6c8); font-weight: 600; }
+    .ing-row.sel { color: #fff; box-shadow: inset 2px 0 0 var(--heli, #b57bff); }
+    .ing-num { flex: 0 0 34px; color: var(--heli, #b57bff); font-weight: 600; }
     .ing-sol { flex: 0 0 56px; color: var(--muted, #888); }
     .ing-date { flex: 1 1 auto; color: var(--muted, #888); font-size: 11px; }
     .ing-alt, .ing-dur { flex: 0 0 auto; font-size: 11.5px; }

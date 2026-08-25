@@ -480,7 +480,13 @@ function aboutHTML(app) {
     <p><button type="button" class="link-btn" id="about-refresh" disabled>Update all mission
       data from NASA</button> <span class="hint">(a few megabytes — desktop recommended)</span></p>
 
-    <h3>Credits</h3>
+    <h3>Data sources &amp; credits</h3>
+    <!-- E1 (2026-08-25): this list is now the app's ONLY attribution. The
+         MapLibre credit box was removed from the bottom-right corner of the
+         map (David: "hard to read and crowds the UI"), so everything the
+         imagery and elevation providers are owed is stated here, in full and
+         unclipped, rather than ellipsised into one line over the terrain. -->
+    <p class="hint">Every map layer in this app comes from the sources below.</p>
     <ul class="credits">
       <li>Imagery: NASA/JPL-Caltech/UArizona (HiRISE) · NASA/JPL-Caltech/MSSS (CTX)</li>
       <li>Elevation: HiRISE DTMs (NASA/JPL/UArizona) · HRSC (ESA/DLR/FU&nbsp;Berlin) ·
@@ -502,6 +508,58 @@ function aboutHTML(app) {
 
     <p class="about-logo"><img src="assets/USSRC_IP_logo.svg" alt="U.S. Space &amp; Rocket Center — INTUITIVE Planetarium" onerror="this.remove()" /></p>
   `;
+}
+
+/* ---------------------------------------------------------------------------
+ * E5 (2026-08-25) — clean capture, with a way back out.
+ *
+ * David: "I'm not sure where the button to take a completely UI free image is,
+ * does that exist?" It did not. D4 shipped the MODE (`?shot=1`, which strips
+ * every scrap of chrome) but never shipped a control that reaches it, so the
+ * only way in was to hand-edit the URL.
+ *
+ * The hard part is not entering capture mode, it is LEAVING it: `body.shot`
+ * hides all chrome with `!important`, so the button that got you in is the
+ * first thing to disappear. Two independent ways out, plus a toast that says
+ * so on the way in, because this runs on a kiosk in a planetarium where nobody
+ * can edit a URL:
+ *
+ *   - Escape
+ *   - a single click/tap anywhere on the page
+ *
+ * The mode is NOT written to the URL hash. A permalink that opens with the UI
+ * stripped and no obvious way back is a trap to hand someone, and `?shot=1`
+ * already exists for the deliberate, scripted case (reel.py uses it).
+ * ------------------------------------------------------------------------ */
+function initShotMode(app) {
+  const btn = document.getElementById('btn-shot');
+
+  /* No toast on the way in: `body.shot #toasts` is hidden with !important, so
+   * a toast here would be a call that renders nothing. The way back out is
+   * advertised on the button itself (title) and is forgiving enough that it
+   * does not need advertising: any click anywhere, or Escape. */
+  function setShot(on) {
+    document.body.classList.toggle('shot', !!on);
+    if (btn) btn.setAttribute('aria-pressed', String(!!on));
+  }
+
+  if (btn) btn.addEventListener('click', () => setShot(!document.body.classList.contains('shot')));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('shot')) setShot(false);
+  });
+
+  /* Capture (`true`) so this wins before the map's own handlers, and only while
+   * the mode is on — otherwise every click on the app would run this. */
+  document.addEventListener('click', (e) => {
+    if (!document.body.classList.contains('shot')) return;
+    /* Let the corner hint's own link (the emblem) still work. */
+    if (e.target && e.target.closest && e.target.closest('#brand-mark')) return;
+    setShot(false);
+  }, true);
+
+  /* `?shot=1` still wins at boot; this only syncs the button's state to it. */
+  if (btn) btn.setAttribute('aria-pressed', String(!!app.shot));
 }
 
 function buildAbout(body, app) {
@@ -578,6 +636,7 @@ export function initUI(app) {
   document.body.classList.toggle('kiosk', !!app.kiosk);
   /* D4 — `?shot=1`. See style.css `body.shot`. */
   document.body.classList.toggle('shot', !!app.shot);
+  initShotMode(app);
   document.body.classList.add(isMobile() ? 'mobile' : 'desktop');
   if (!document.body.dataset.detent) document.body.dataset.detent = 'peek';
 
