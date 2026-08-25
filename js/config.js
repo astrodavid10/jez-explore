@@ -114,6 +114,12 @@ export const LAYER_IDS = [
   'heli-path-sel-case',   // 19a casing under heli-path-sel
   'heli-path-sel',        // 19  selected flight, emphasized
   'heli-ribbon',          // 20  fill-extrusion altitude ribbon
+  /* E3 (2026-08-25): the flight path itself, floating at its TRUE altitude.
+   * The ribbon above is a curtain from the ground up to the helicopter; this
+   * is the trajectory as a slender extruded tube in the air, which is what
+   * reads as "the flight" when the camera is tilted. Additive id — nothing
+   * moved, so printed QR links keep resolving. */
+  'heli-track-3d',        // 20b fill-extrusion floating flight path
   'waypoints-dot',        // 21  end-of-drive parking spots
   'waypoints-hit',        // 22  invisible 16 px touch target for the above
   'samples-dot',          // 23  sample tubes
@@ -124,7 +130,7 @@ export const LAYER_IDS = [
 ];
 
 /** Layers that are omitted from the style entirely in lite mode (§5). */
-export const LITE_OMIT_LAYERS = ['hypsometric', 'flood-tide', 'heli-ribbon'];
+export const LITE_OMIT_LAYERS = ['hypsometric', 'flood-tide', 'heli-ribbon', 'heli-track-3d'];
 
 /* -----------------------------------------------------------------------------
  * FROZEN: URL hash short keys (docs/frontend-design.md §4.11)
