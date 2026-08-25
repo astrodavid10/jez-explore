@@ -948,8 +948,10 @@ function injectStyle() {
     }
     .ing-row:last-child { border-bottom: 0; }
     .ing-row:hover, .ing-row.sel { background: var(--panel2, #25252a); }
-    .ing-row.sel { color: #fff; box-shadow: inset 2px 0 0 var(--accent, #5ad0ff); }
-    .ing-num { flex: 0 0 34px; color: var(--accent, #5ad0ff); font-weight: 600; }
+    /* E6: the panel agrees with the map — these were --accent (chrome cyan),
+       which no longer matches the turquoise Ginny is drawn in. */
+    .ing-row.sel { color: #fff; box-shadow: inset 2px 0 0 var(--heli, #2ee6c8); }
+    .ing-num { flex: 0 0 34px; color: var(--heli, #2ee6c8); font-weight: 600; }
     .ing-sol { flex: 0 0 56px; color: var(--muted, #888); }
     .ing-date { flex: 1 1 auto; color: var(--muted, #888); font-size: 11px; }
     .ing-alt, .ing-dur { flex: 0 0 auto; font-size: 11.5px; }
