@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer — boot.js
+ * Jez Explore — boot.js
  *
  * Entry module. Order of operations matters (docs/frontend-design.md §1.2, §7):
  *
@@ -224,6 +224,11 @@ async function boot() {
     mlcontour,
     lite: detectLite(),
     kiosk: params.get('kiosk') === '1',
+    /* D4 — capture mode: `?shot=1` strips every scrap of UI for a
+     * publication-ready screenshot. Read here rather than in ui.js so
+     * the flag exists before the shell paints and there is no frame in
+     * which the chrome is visible. */
+    shot: params.get('shot') === '1',
     map: null,
     demSource: null,
     manifest: null,
@@ -276,7 +281,7 @@ async function boot() {
   bus.emit('ready', app);
   console.info(
     `[jezero] ready — v${app.version}, scale ${app.SCALE}, ` +
-    `lite=${app.lite}, kiosk=${app.kiosk}, ` +
+    `lite=${app.lite}, kiosk=${app.kiosk}, shot=${app.shot}, ` +
     `z18 pack=${manifest.ultraAvailable ? 'installed' : 'not installed'}`
   );
 }

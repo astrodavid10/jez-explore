@@ -1,7 +1,7 @@
 /* =============================================================================
- * Jezero Explorer — flood.js
+ * Jez Explore — flood.js
  *
- * Owns the paleolake flood + hypsometric elevation-colours behaviours
+ * Owns the paleolake flood + hypsometric elevation-colors behaviors
  * (docs/frontend-design.md §4.5, §3.2 layer ids flood-fill / flood-tide /
  * highstand-ring / hypsometric, §2 paleolake-{2500,2450,2395,2350}.geojson).
  *
@@ -38,14 +38,14 @@
  *       non-LITE + flood-tide present in the style; otherwise runs the
  *       fallback staged walk (see below). The returned promise resolves once
  *       the animation has fully settled either way (finished, aborted by the
- *       frame-time guard, or cancelled) — opts.onDone(completedCleanly:bool)
+ *       frame-time guard, or canceled) — opts.onDone(completedCleanly:bool)
  *       fires at that same moment, so either can be used to sequence a tour
  *       step's "Next" affordance.
  *   'flood:cancel' () => void
  *       Stops whatever flood animation is in progress (tide or fallback),
  *       leaving whatever polygon was last shown on screen.
  *   'hypsometric:ramp'(opts?: {min,max,opacity}) => boolean
- *       Rebuilds the "Elevation colours" color-relief ramp (default
+ *       Rebuilds the "Elevation colors" color-relief ramp (default
  *       -2750 -> -1550, matching style.js's static default) — for the tour
  *       or any future adjustment UI. Returns false (+ toast) if the
  *       `hypsometric` layer isn't in the style (LITE omits it).
@@ -84,7 +84,7 @@ import { floodRamp } from './style.js';
 const FLOOD_OFF_SENTINEL = -3000;
 
 /** Same 10-stop palette as style.js's (unexported) hypsometricRamp(), so the
- * default here matches the style's built-in ramp exactly; parameterised on
+ * default here matches the style's built-in ramp exactly; parameterized on
  * min/max for 'hypsometric:ramp' adjustments. */
 const HYPSO_COLORS = [
   '#2c1e3a', '#3b3a6b', '#3f6b8a', '#4f8f84', '#8a9a56',
@@ -99,8 +99,8 @@ let APP = null;
  * The DEM encode offset (docs/frontend-design.md §9.3). Everything in this
  * module — global-state `flood`, currentLevel, PALEOLAKE_LEVELS, HIGHSTAND_M,
  * the static paleolake GeoJSON's `level` property — stays in REAL areoid
- * metres. The offset is applied at exactly two points, both of them an
- * `['elevation']` colour ramp reading ENCODED tile values: floodRamp() and
+ * meters. The offset is applied at exactly two points, both of them an
+ * `['elevation']` color ramp reading ENCODED tile values: floodRamp() and
  * buildHypsoRamp(). The static-polygon path never touches it.
  */
 function elevOffset() {
@@ -392,12 +392,12 @@ async function animateFallback(target, opts) {
   const levels = PALEOLAKE_LEVELS.filter((l) => l <= snapTarget);
   if (!levels.length) levels.push(PALEOLAKE_LEVELS[0]);
 
-  let cancelled = false;
+  let canceled = false;
   let timer = null;
   let wakeStage = null;           /* resolver of the inter-stage sleep */
   currentAnimation = {
     cancel() {
-      cancelled = true;
+      canceled = true;
       if (timer) clearTimeout(timer);
       /* Settle the pending sleep, otherwise the loop hangs at its await and
        * the promise/onDone never fire (found by the tour agent, 2026-08-23). */
@@ -419,9 +419,9 @@ async function animateFallback(target, opts) {
   };
 
   for (let i = 0; i < levels.length; i++) {
-    if (cancelled) return finish(false);
+    if (canceled) return finish(false);
     const { ok, level: snapped } = await loadLevelData(levels[i]);
-    if (cancelled) return finish(false);
+    if (canceled) return finish(false);
     if (!ok) {
       toast('Paleolake data is not fully available — showing what loaded.', { kind: 'warn' });
       break;
@@ -433,11 +433,11 @@ async function animateFallback(target, opts) {
     if (i < levels.length - 1) {
       await new Promise((resolve) => { wakeStage = resolve; timer = setTimeout(resolve, stageMs); });
       wakeStage = null;
-      if (cancelled) return finish(false);
+      if (canceled) return finish(false);
     }
   }
 
-  return finish(reachedAny && !cancelled);
+  return finish(reachedAny && !canceled);
 }
 
 /**
@@ -458,7 +458,7 @@ async function animate(targetLevel, opts = {}) {
   }
 
   /* Both branches resolve only once the animation has fully settled (cleanly
-   * or aborted/cancelled), so callers can `await animate(...)` uniformly;
+   * or aborted/canceled), so callers can `await animate(...)` uniformly;
    * opts.onDone(cleanly) fires at the same moment as this promise settling. */
   if (tideAvailable()) {
     await animateTide(target, opts);
@@ -468,12 +468,12 @@ async function animate(targetLevel, opts = {}) {
 }
 
 /* ---------------------------------------------------------------------------
- * Hypsometric elevation-colours ramp
+ * Hypsometric elevation-colors ramp
  * ------------------------------------------------------------------------ */
-/** @param {number} min @param {number} max both in REAL areoid metres. */
+/** @param {number} min @param {number} max both in REAL areoid meters. */
 function buildHypsoRamp(min = HYPSO_DEFAULT_MIN, max = HYPSO_DEFAULT_MAX) {
   const n = HYPSO_COLORS.length;
-  const off = elevOffset();          // ['elevation'] yields ENCODED metres
+  const off = elevOffset();          // ['elevation'] yields ENCODED meters
   const expr = ['interpolate', ['linear'], ['elevation']];
   for (let i = 0; i < n; i += 1) {
     const t = i / (n - 1);
@@ -497,7 +497,7 @@ function ensureHypsoRampDefault() {
 function setHypsoRamp(opts = {}) {
   const map = APP.map;
   if (!map || !map.getLayer('hypsometric')) {
-    toast('Elevation colours are not available in this build.', { kind: 'warn' });
+    toast('Elevation colors are not available in this build.', { kind: 'warn' });
     return false;
   }
   const min = Number.isFinite(opts.min) ? opts.min : HYPSO_DEFAULT_MIN;

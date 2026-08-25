@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer — manifest.js
+ * Jez Explore — manifest.js
  *
  * tiles/manifest.json is the single source of truth for tile paths, zoom caps,
  * bounds, the DEM encoding and — critically — the 1.878027 Mars/Earth radius
@@ -9,7 +9,7 @@
  *   - loads the manifest (never fatal: falls back to the pipeline contract so
  *     the app still boots into a "waiting for tiles" state, §7)
  *   - probes the optional cross-origin z18 imagery pack with a 3 s timeout
- *   - returns one resolved, normalised object
+ *   - returns one resolved, normalized object
  * ========================================================================== */
 
 import { SCALE, TUNING, VERTICAL_DATUM } from './config.js';
@@ -41,7 +41,7 @@ const FALLBACK = {
     elev_min: -2720, elev_max: -1620,
     /* 0, not 4000: the fallback is only used when tiles/manifest.json is
      * missing, in which case there are no tiles to decode either. A wrong
-     * non-zero default would silently shift every readout by kilometres. */
+     * non-zero default would silently shift every readout by kilometers. */
     elev_offset: 0,
   },
   credits: [],
@@ -83,7 +83,7 @@ async function probeUltra(url) {
 }
 
 /* ---------------------------------------------------------------------------
- * Normalisation. Guards against a hand-edited manifest: missing tileSize,
+ * Normalization. Guards against a hand-edited manifest: missing tileSize,
  * missing encoding, a contour_maxzoom above the DEM maxzoom, and so on.
  * ------------------------------------------------------------------------ */
 function num(v, fallback) {
@@ -94,7 +94,7 @@ function bounds4(v, fallback) {
   return Array.isArray(v) && v.length === 4 && v.every(Number.isFinite) ? v : fallback;
 }
 
-function normalise(m) {
+function normalize(m) {
   const out = {
     generated: m.generated ?? null,
     snapshot_sol: num(m.snapshot_sol, FALLBACK.snapshot_sol),
@@ -160,13 +160,13 @@ function normalise(m) {
      * contours). Clamp so a bad manifest cannot ask for tiles that don't exist. */
     contour_maxzoom: Math.min(num(dem.contour_maxzoom, 13), demMax),
     bounds: bounds4(dem.bounds, FALLBACK.dem.bounds),
-    /* elev_min/elev_max are REAL metres on the areoid and always have been.
+    /* elev_min/elev_max are REAL meters on the areoid and always have been.
      * They are NOT shifted by elev_offset — ingenuity.js uses elev_min as its
      * absolute-mode REF against per-vertex `gnd` values that come from data/,
-     * which the pipeline writes in real metres. */
+     * which the pipeline writes in real meters. */
     elev_min: num(dem.elev_min, -2720),
     elev_max: num(dem.elev_max, -1620),
-    /* Metres ADDED to every sample by p07_terrarium.py --offset before
+    /* Meters ADDED to every sample by p07_terrarium.py --offset before
      * terrarium-encoding it, so the tiles carry no negative values and
      * MapLibre's 3D camera stops mis-handling an all-negative DEM
      * (docs/frontend-design.md §9.3). This is the ONE place the app learns the
@@ -195,7 +195,7 @@ export async function loadManifest() {
     );
   }
 
-  const manifest = normalise(raw || FALLBACK);
+  const manifest = normalize(raw || FALLBACK);
   manifest.manifestLoaded = raw !== null;
 
   /* The pack lives in a separate repo and may simply not exist yet. */

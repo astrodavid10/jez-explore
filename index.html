@@ -5,18 +5,18 @@
 <!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve on iPhone -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
-<title>Jezero Explorer</title>
+<title>Jez Explore — Jezero Crater with Perseverance and Ingenuity</title>
 
-<meta name="description" content="Explore Jezero Crater on Mars: Perseverance's 45-kilometre traverse, Ingenuity's 72 flights, 3D terrain, contours and the ancient lake — a zoomable map built from NASA HiRISE, CTX and HRSC data." />
-<meta name="author" content="A. David Weigel — INTUITIVE Planetarium, U.S. Space &amp; Rocket Center" />
+<meta name="description" content="Explore Jezero Crater on Mars alongside NASA's Perseverance rover and the Ingenuity helicopter: the rover's 45-kilometer traverse, all 72 helicopter flights, 3D terrain, contours and the crater's ancient lake — a zoomable map built from NASA HiRISE, CTX and HRSC data." />
+<meta name="author" content="A. David Weigel — INTUITIVE® Planetarium, U.S. Space &amp; Rocket Center" />
 
 <!-- Open Graph / social. assets/hero-jezero.jpg is a PLACEHOLDER: the file is
      not in the repo yet (see README "Placeholders"). Until it exists, social
      cards fall back to a link-only preview — harmless. -->
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Jezero Explorer" />
-<meta property="og:site_name" content="Jezero Explorer" />
-<meta property="og:description" content="Perseverance's traverse, Ingenuity's flights and the ancient lake of Jezero Crater — zoomable, in 3D, from NASA data." />
+<meta property="og:title" content="Jez Explore — Jezero Crater with Perseverance and Ingenuity" />
+<meta property="og:site_name" content="Jez Explore" />
+<meta property="og:description" content="Drive the 45 kilometers Perseverance has covered, replay all 72 Ingenuity flights, tilt the crater into 3D and refill its ancient lake — from NASA data." />
 <meta property="og:image" content="assets/hero-jezero.jpg" />
 <meta property="og:image:alt" content="Jezero Crater from orbit, with Perseverance's traverse drawn across the crater floor." />
 <meta name="twitter:card" content="summary_large_image" />
@@ -28,7 +28,7 @@
 <link rel="stylesheet" href="style.css" />
 <link rel="icon" href="assets/rover.svg" type="image/svg+xml" />
 
-<!-- Pre-CSS paint colour: if style.css is slow or missing, the page is still
+<!-- Pre-CSS paint color: if style.css is slow or missing, the page is still
      dark instead of flashing white. -->
 <style>html,body{margin:0;background:#111;color:#ddd;font:13px/1.4 system-ui,sans-serif}</style>
 </head>
@@ -70,7 +70,7 @@
 
 <noscript>
   <div class="static-panel">
-    <h1>Jezero Explorer</h1>
+    <h1>Jez Explore</h1>
     <p>This map needs JavaScript. Please enable it, or see NASA's own
       <a href="https://mars.nasa.gov/maps/location/?mission=M20">Mars 2020 mission map</a>.</p>
   </div>
@@ -83,14 +83,16 @@
 <div id="static-fallback" class="static-panel" hidden>
   <img src="assets/hero-jezero.jpg" alt="Jezero Crater from orbit" class="hero"
        onerror="this.remove()" />
-  <h1>Jezero Explorer</h1>
+  <h1>Jez Explore</h1>
+  <p class="sub">Exploring Jezero Crater on Mars with NASA&rsquo;s Perseverance rover
+     and the Ingenuity helicopter.</p>
   <p><strong>This device can't run the 3D map.</strong> The map needs WebGL&nbsp;2,
      which means <em>iOS&nbsp;16.4 or newer</em> (iPhone&nbsp;8 and later), or
      Chrome/Edge&nbsp;100 or newer on Android, Windows, macOS and Linux.</p>
-  <p>Jezero Crater is a 45-kilometre impact basin on Mars that held a lake and a
+  <p>Jezero Crater is a 45-kilometer impact basin on Mars that held a lake and a
      river delta more than three billion years ago. NASA's Perseverance rover
-     landed there on 18 February 2021 and has since driven more than 45
-     kilometres across the crater floor and up onto its western rim, collecting
+     landed there on February 18, 2021 and has since driven more than 45
+     kilometers across the crater floor and up onto its western rim, collecting
      sealed rock cores for a future mission to bring home. The Ingenuity
      helicopter flew 72 times in the same crater — the first powered flight on
      another world.</p>
@@ -98,7 +100,7 @@
      <a href="https://mars.nasa.gov/maps/location/?mission=M20">mars.nasa.gov/maps</a>.</p>
   <p class="credit">Imagery NASA/JPL-Caltech/UArizona/MSSS · Elevation HiRISE, HRSC (ESA/DLR/FU Berlin), USGS
      · Traverse &amp; flight data NASA/JPL-Caltech (MMGIS) · Tiles &amp; blend
-     A.&nbsp;David&nbsp;Weigel, INTUITIVE Planetarium, U.S. Space &amp; Rocket Center.</p>
+     A.&nbsp;David&nbsp;Weigel, <i class="brand-intuitive">INTUITIVE</i><sup class="brand-reg">&#174;</sup>&nbsp;Planetarium, U.S. Space &amp; Rocket Center.</p>
 </div>
 
 <!-- ===========================================================================
@@ -112,7 +114,7 @@
   <!-- mobile-only translucent top bar -->
   <header id="topbar">
     <button id="btn-sheet" class="icon-btn" aria-label="Show controls" title="Show controls">☰</button>
-    <span class="topbar-title">Jezero Explorer</span>
+    <span class="topbar-title">Jez Explore</span>
     <button id="btn-3d-mobile" class="icon-btn" aria-pressed="false" title="3D terrain">3D</button>
   </header>
 
@@ -123,8 +125,9 @@
 
     <div id="dock-head">
       <div class="titles">
-        <h1>Jezero&nbsp;Explorer</h1>
-        <p class="sub">Perseverance &amp; Ingenuity in Jezero Crater, Mars</p>
+        <h1>Jez&nbsp;Explore</h1>
+        <p class="sub">Exploring Jezero Crater on Mars with NASA&rsquo;s Perseverance
+          rover and the Ingenuity helicopter</p>
       </div>
       <button id="btn-tour" class="primary">▶ START THE TOUR</button>
       <nav id="tabs" role="tablist" aria-label="Sections"></nav>
@@ -154,6 +157,24 @@
     </div>
 
     <!-- bottom-left readouts -->
+    <!-- D10 (2026-08-24) — INTUITIVE(R) Planetarium emblem.
+         TOP-LEFT of the map is the only corner nothing else claims: #map-tools
+         owns top-right, #readout owns bottom-left, MapLibre's attribution owns
+         bottom-right. Follows the BrandMark.vue pattern from David's
+         sol-solar-viewer: the <a> IS the tap target (so the whole 44 px circle
+         is tappable, not just the glyph), and a faint radial halo sits behind
+         the solid-white icon so it reads over bright dune fields as well as
+         dark shadow. Brand rule from Planetarium_Brand_Kit_V7 p1: "the
+         Planetarium wordmark cannot exist where the USSRC logo does not" —
+         this is the ICON, and the full USSRC lockup is in the About panel. -->
+    <a id="brand-mark"
+       href="https://www.rocketcenter.com/INTUITIVEPlanetarium"
+       target="_blank" rel="noopener"
+       title="INTUITIVE® Planetarium at the U.S. Space &amp; Rocket Center"
+       aria-label="INTUITIVE Planetarium at the U.S. Space and Rocket Center">
+      <img src="assets/ip-emblem-white.svg" alt="" draggable="false" />
+    </a>
+
     <div id="readout">
       <div id="scalebar"><div class="bar"></div><span class="label">—</span></div>
       <div id="elev-readout" class="elev">—</div>

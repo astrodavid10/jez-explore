@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer — ingenuity.js
+ * Jez Explore — ingenuity.js
  *
  * INGENUITY mode: the sol-filtered flight list, the per-flight card (stats +
  * hand-rolled SVG altitude chart + replay), the client-built fill-extrusion
@@ -77,15 +77,15 @@ import { registerPanel, registerAction, toast, LITE } from './ui.js';
  * SETTLED — integration pass, 2026-08-23. Both halves measured in the real app
  * (MapLibre GL 6.5.0), so nobody needs to re-litigate this:
  *
- *   1. fill-extrusion IS terrain-relative. A 100 m quad placed off-centre over
- *      ground 20.1 m above the view centre rose exactly as predicted when the
+ *   1. fill-extrusion IS terrain-relative. A 100 m quad placed off-center over
+ *      ground 20.1 m above the view center rose exactly as predicted when the
  *      exaggeration went 1 -> 3 (predicted 7.9 px, observed 8.0 px). So
  *      'terrain-relative' with base 0 is correct — keep it.
  *
  *   2. MapLibre does NOT multiply fill-extrusion heights by the terrain
  *      exaggeration. A quad with a LITERAL height of 200 rendered 128 px tall
  *      at exaggeration 1 and 130 px at exaggeration 3 (ratio 1.016), while
- *      tripling the metres instead (200 -> 600) gave 363 px (ratio 2.836).
+ *      tripling the meters instead (200 -> 600) gave 363 px (ratio 2.836).
  *      Therefore the `['*', ['get','top_m'], ['global-state','vscale']]` below
  *      does NOT double-apply: it is the ONLY thing scaling the ribbon, and
  *      removing it would leave the ribbon at true-Mars height on terrain
@@ -95,7 +95,7 @@ import { registerPanel, registerAction, toast, LITE } from './ui.js';
  * -------------------------------------------------------------------------- */
 const RIBBON_MODE = 'terrain-relative'; // | 'absolute'
 
-/** Ribbon width in true Mars metres (design §4.4: "3 Mars metres wide"). */
+/** Ribbon width in true Mars meters (design §4.4: "3 Mars meters wide"). */
 const RIBBON_WIDTH_M = 3;
 /** Floating-heli leader quad width during replay (design §4.4: "1 m-wide"). */
 const LEADER_WIDTH_M = 1;
@@ -178,13 +178,13 @@ function fmtElev(m) {
   return `${v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)} m`;
 }
 
-/** Whole-metre version, for round constants like HIGHSTAND_M. */
+/** Whole-meter version, for round constants like HIGHSTAND_M. */
 function fmtElevInt(m) {
   const v = Math.round(m);
   return `${v < 0 ? '−' : ''}${Math.abs(v)} m`;
 }
 
-/** Degrees-of-longitude per metre at a given latitude (Earth-proxy grid). */
+/** Degrees-of-longitude per meter at a given latitude (Earth-proxy grid). */
 function degLonPerM(lat) {
   return 1 / (M_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180));
 }
@@ -246,7 +246,7 @@ function setHeliModeOn(on) {
  * the fetch landed and renderHeader()/renderList() repainted the panel with all
  * 72 flights, but nothing ever cleared the flag. The result looked finished —
  * correct header, full flight list — with the only control that turns the
- * layers on greyed out forever. Nothing else in this module was broken.
+ * layers on grayed out forever. Nothing else in this module was broken.
  *
  * Fix: `.disabled` is derived from flightsIndex here, and renderList() calls
  * this on every repaint, so the button follows the data instead of a snapshot
@@ -263,7 +263,7 @@ function updateModeButton() {
 /**
  * A3 (2026-08-24): re-derive heliModeOn from what the layers are ACTUALLY
  * doing. init() reads layer visibility exactly once, but hash.js applies
- * `on=heli` after every feature module has initialised — so a deep link left
+ * `on=heli` after every feature module has initialized — so a deep link left
  * the tracks visible while this module still believed the mode was off (button
  * reading "Enter Ingenuity mode", ribbon gated off). Subscribed to 'hashstate',
  * which hash.js emits after applying a parsed hash; this module emits 'layers',
@@ -398,11 +398,11 @@ function flyToFlight(n) {
  * ------------------------------------------------------------------------ */
 
 /**
- * @param {number} agl metres above ground
+ * @param {number} agl meters above ground
  * @param {number} gnd areoid elevation of the ground under this sample
  * @param {number} ref manifest.dem.elev_min
  * @param {boolean} [hover] true for the floating-heli hexagon (agl +/- 3 m)
- * @returns {{base_m:number, top_m:number}} true Mars metres; the paint
+ * @returns {{base_m:number, top_m:number}} true Mars meters; the paint
  *   expression this module installs multiplies both by global-state vscale.
  */
 function ribbonExtent(agl, gnd, ref, hover = false) {
@@ -1009,7 +1009,7 @@ export async function init(app) {
    * flight-72 site and left heli-path at visibility:none, so the most obvious
    * way into Ingenuity showed the visitor nothing at all. views.js already
    * emits 'view' with the bookmark id after every jump (config.js BOOKMARKS
-   * id 'heli72'), so this module can own the behaviour without views.js or
+   * id 'heli72'), so this module can own the behavior without views.js or
    * config.js being touched — same seam as the tour's 'heli-mode' action. */
   APP.on('view', (d) => {
     if (!d || d.id !== 'heli72') return;

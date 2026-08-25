@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer — timeline.js
+ * Jez Explore — timeline.js
  *
  * The mission TIMELINE: sol slider, play/pause, speed, "Follow rover" and
  * "Where is Percy now?" (docs/frontend-design.md §4.3, §4.9). This is the ONLY

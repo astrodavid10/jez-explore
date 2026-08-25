@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer — hash.js
+ * Jez Explore — hash.js
  *
  * URL hash / permalink, exactly per docs/frontend-design.md §4.11:
  *

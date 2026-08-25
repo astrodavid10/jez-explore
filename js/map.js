@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer — map.js
+ * Jez Explore — map.js
  *
  * Owns the Map object and everything welded to it:
  *   - the maplibre-contour DemSource, constructed BEFORE `new Map` (§3.3)
@@ -191,7 +191,7 @@ function makeElevationReader(manifest) {
   }
 
   /**
-   * Terrarium: encoded = (R * 256 + G + B / 256) − 32768. Real areoid metres are
+   * Terrarium: encoded = (R * 256 + G + B / 256) − 32768. Real areoid meters are
    * that minus the pipeline's encode offset (0 for an un-offset tile set).
    */
   function decode(rec, px, py) {
@@ -202,7 +202,7 @@ function makeElevationReader(manifest) {
   }
 
   /**
-   * @returns {Promise<number|null>} metres on the Mars2000 areoid, or null if
+   * @returns {Promise<number|null>} meters on the Mars2000 areoid, or null if
    *   the tile is missing, still loading, or a fetch is already in flight.
    */
   return async function elevAt(lon, lat) {
@@ -218,9 +218,9 @@ function makeElevationReader(manifest) {
     const rec = await tileData(tx, ty);
     if (!rec) return null;
 
-    /* Bilinear between pixel centres. Samples are clamped inside the tile, so
-     * a point in the outer half-pixel of a tile edge is nearest-neighbour
-     * rather than interpolated across the seam — sub-metre at 2.4 m/px. */
+    /* Bilinear between pixel centers. Samples are clamped inside the tile, so
+     * a point in the outer half-pixel of a tile edge is nearest-neighbor
+     * rather than interpolated across the seam — sub-meter at 2.4 m/px. */
     const sx = (fx - tx) * rec.w - 0.5;
     const sy = (fy - ty) * rec.h - 0.5;
     const x0 = Math.floor(sx);
@@ -276,7 +276,7 @@ export async function createMap(app) {
     demSource.setupMaplibre(maplibregl);
   } catch (err) {
     demSource = null;
-    console.error('[jezero] maplibre-contour failed to initialise — contour ' +
+    console.error('[jezero] maplibre-contour failed to initialize — contour ' +
                   'layers will be omitted. Everything else still works.', err);
   }
   app.demSource = demSource;
@@ -310,7 +310,7 @@ export async function createMap(app) {
     /* Source maxzoom is 17 (18 with the pack); the map goes deeper and lets
      * MapLibre overzoom, which keeps marker and label precision (§3.4). */
     maxZoom: VIEW.MAX_ZOOM,
-    /* Non-negotiable for a general audience: no grey void to pan into. */
+    /* Non-negotiable for a general audience: no gray void to pan into. */
     maxBounds: manifest.padBounds(VIEW.BOUNDS_PAD_DEG),
     maxPitch,
     /* We own the URL (js/hash.js) — never fight MapLibre's own hash writer. */
@@ -343,6 +343,46 @@ export async function createMap(app) {
     compact: true,
     customAttribution: ATTRIBUTION,
   }), 'bottom-right');
+
+  /* ---------------------------------------------------------------------
+   * Make the (i) button EXPAND the credits instead of hiding them.
+   *
+   * 2026-08-24, reported from the live site: "what is the little info (i) at
+   * the bottom right? I'm not seeing anything in its box."
+   *
+   * The full credit string is 260 characters — 1545 px of text — and style.css
+   * caps it to one ellipsised line so it cannot wrap across the map or hang off
+   * a phone screen. That cap is right, but it left MapLibre's own toggle doing
+   * the only thing it knows how to do: hide that one clipped line, then show it
+   * again. So the (i) appeared to empty its own box and never revealed the
+   * three quarters of the NASA/ESA/DLR/USGS credits that were clipped off the
+   * right-hand edge. Those attributions are a condition of using the imagery,
+   * not decoration, so "unreadable but technically present" is not good enough.
+   *
+   * Here the button keeps MapLibre's control permanently in its shown state and
+   * toggles our own `jz-attrib-open` class instead, which style.css renders as
+   * a wrapped, fully readable block. Capture (`true`) so this runs before
+   * MapLibre's own handler, and stopPropagation so its collapse never fires.
+   * ------------------------------------------------------------------ */
+  const attribEl = map.getContainer().querySelector('.maplibregl-ctrl-attrib');
+  const attribBtn = attribEl && attribEl.querySelector('.maplibregl-ctrl-attrib-button');
+  if (attribEl && attribBtn) {
+    attribBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      /* MapLibre may have removed this on a previous click; keep it shown so
+       * the credit line never disappears entirely. */
+      attribEl.classList.add('maplibregl-compact-show');
+      const open = attribEl.classList.toggle('jz-attrib-open');
+      attribBtn.setAttribute('aria-expanded', String(open));
+      attribBtn.setAttribute('title', open ? 'Hide full credits' : 'Show full credits');
+    }, true);
+    attribBtn.setAttribute('aria-expanded', 'false');
+    attribBtn.setAttribute('title', 'Show full credits');
+    /* Belt and braces for hover: the whole string as a native tooltip. */
+    const inner = attribEl.querySelector('.maplibregl-ctrl-attrib-inner');
+    if (inner) inner.setAttribute('title', inner.textContent.trim());
+  }
 
   /* REMOVED by the elevation-offset migration (docs/frontend-design.md §9.3):
    * a dynamic pitch ceiling that clamped maxPitch to 66 whenever terrain was on
@@ -419,8 +459,8 @@ export async function createMap(app) {
   };
   app.getElevCursor = () => elevCursor;
 
-  /* --- Mars-metre distance helper -------------------------------------- */
-  /** True Mars ground distance between two LngLat-likes, in metres. */
+  /* --- Mars-meter distance helper -------------------------------------- */
+  /** True Mars ground distance between two LngLat-likes, in meters. */
   app.marsMetres = (a, b) => {
     const A = maplibregl.LngLat.convert(a);
     const B = maplibregl.LngLat.convert(b);
@@ -486,7 +526,7 @@ export async function createMap(app) {
    * (docs/frontend-design.md §9.3; every number below was measured in this app.)
    *
    * MapLibre anchors the 3D camera to `transform.elevation`: the ground height
-   * under the map centre. With terrain on it re-derives that value in exactly
+   * under the map center. With terrain on it re-derives that value in exactly
    * two places — inside `setTerrain`, and when a DEM tile ARRIVES while no
    * camera animation holds `elevationFreeze`. A flyTo to somewhere new loads
    * every DEM tile it needs DURING the flight (freeze on), so nothing arrives
@@ -576,7 +616,7 @@ export async function createMap(app) {
   });
 
   /**
-   * How far the map centre projects from the centre of the canvas, in pixels:
+   * How far the map center projects from the center of the canvas, in pixels:
    * a few px when MapLibre's terrain anchor matches the ground, 700–1,900 px
    * when it is stale. 0 in 2D. Diagnostic only — nothing in the app behaves
    * differently on it — but it is the cheapest console read on whether the

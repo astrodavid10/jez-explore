@@ -1,9 +1,9 @@
 /* =============================================================================
- * Jezero Explorer — ui.js
+ * Jez Explore — ui.js
  *
  * The chrome: sidebar on desktop, three-detent bottom sheet on phones, right
  * drawer on landscape phones, toasts, the data-currency badge, the About panel,
- * ?kiosk=1, and lite-mode reporting.
+ * ?kiosk=1, ?shot=1 (capture mode), and lite-mode reporting.
  *
  * ---------------------------------------------------------------------------
  * REGISTRATION API — how the feature agents plug in WITHOUT editing this file
@@ -397,42 +397,43 @@ function aboutHTML(app) {
     : 'not configured';
 
   return `
-    <p><strong>Jezero Explorer</strong> is a zoomable map of Jezero Crater on Mars: the
-      45-kilometre impact basin that held a lake and a river delta more than three billion
-      years ago, where NASA's <em>Perseverance</em> rover landed on 18 February 2021 and
-      where <em>Ingenuity</em> made the first 72 powered flights on another world.</p>
+    <p><strong>Jez Explore</strong> lets you explore Jezero Crater on Mars alongside
+      NASA's <em>Perseverance</em> rover and the <em>Ingenuity</em> helicopter. Jezero is the
+      45-kilometer impact basin that held a lake and a river delta more than three billion
+      years ago. <em>Perseverance</em> landed there on February 18, 2021, and
+      <em>Ingenuity</em> made the first 72 powered flights on another world above it.</p>
 
     <p>Drag the sol slider to replay the whole mission — ${HELI_TOTALS.flights} helicopter
       flights included — turn on 3D terrain, raise the ancient lake to its shoreline, and
       follow the rover from the crater floor up onto the western rim.</p>
 
     <h3>Who made it</h3>
-    <p>Built by <strong>A. David Weigel</strong> — INTUITIVE&nbsp;Planetarium,
+    <p>Built by <strong>A. David Weigel</strong> — <i class="brand-intuitive">INTUITIVE</i><sup class="brand-reg">&#174;</sup>&nbsp;Planetarium,
       U.S.&nbsp;Space&nbsp;&amp;&nbsp;Rocket Center — as a companion to the planetarium's
-      Mars programmes. <em>Data to Dome, Dome to Phone:</em> the same NASA data that drives
-      the 20-metre dome downtown drives this page in your hand, from the same blended
+      Mars programs. <em>Data to Dome, Dome to Phone:</em> the same NASA data that drives
+      the 20-meter dome downtown drives this page in your hand, from the same blended
       elevation and imagery mosaics.</p>
 
     <h3>How the map was made</h3>
     <p>Orbital imagery (HiRISE, CTX and HRSC) and several elevation models were blended into
       seamless regional mosaics, then cut into standard web map tiles with GDAL. Elevation is
-      stored as Terrarium-encoded PNGs, so your browser decodes real metres out of the
-      colours — that is where the contour lines, the 3D relief and the elevation readout all
+      stored as Terrarium-encoded PNGs, so your browser decodes real meters out of the
+      colors — that is where the contour lines, the 3D relief and the elevation readout all
       come from.</p>
     <p><strong>One honest caveat about scale.</strong> Web maps assume Earth. To use ordinary
       web-map tiles, the Mars data is relabelled onto an Earth-sized Mercator grid, which
       stretches every horizontal distance by a factor of
       ${scale.toFixed(6)} (Earth's radius 6,378,137&nbsp;m ÷ Mars' 3,396,190&nbsp;m).
-      Vertical values are untouched, true Mars metres. This app divides that factor back out
+      Vertical values are untouched, true Mars meters. This app divides that factor back out
       everywhere it matters: the scale bar, every distance we quote, and the 3D relief — so
       "1×" vertical exaggeration really is true Mars, not a flattened version of it.</p>
 
     <h3>Why the elevations are negative</h3>
     <p>Mars has no sea level. Heights are measured from the <em>areoid</em>
       (${VERTICAL_DATUM}) — a mathematical surface of constant gravity that stands in for
-      one. Jezero's floor happens to sit about 2,600&nbsp;metres <em>below</em> that zero, so
+      one. Jezero's floor happens to sit about 2,600&nbsp;meters <em>below</em> that zero, so
       contour labels read "−2,450&nbsp;m" and so on. The rover is now more than
-      600&nbsp;metres higher than where it landed, and still below zero.</p>
+      600&nbsp;meters higher than where it landed, and still below zero.</p>
     <p>In 3D, a flooded lake is drawn as shading over the ground rather than a flat water
       surface — it shows you which ground is under water, not a mirror-flat lake.</p>
 
@@ -449,12 +450,12 @@ function aboutHTML(app) {
       <li>Elevation: HiRISE DTMs (NASA/JPL/UArizona) · HRSC (ESA/DLR/FU&nbsp;Berlin) ·
         USGS Astrogeology</li>
       <li>Traverse, sample and flight data: NASA/JPL-Caltech, via the NASA MMGIS team</li>
-      <li>Tiles, blend and this application: A. David Weigel, INTUITIVE Planetarium,
+      <li>Tiles, blend and this application: A. David Weigel, <i class="brand-intuitive">INTUITIVE</i><sup class="brand-reg">&#174;</sup>&nbsp;Planetarium,
         U.S. Space &amp; Rocket Center</li>
     </ul>
 
     <h3>Software</h3>
-    <p>MapLibre GL JS 6.5.0 and maplibre-contour 0.1.0, both 3-clause BSD; full licence text
+    <p>MapLibre GL JS 6.5.0 and maplibre-contour 0.1.0, both 3-clause BSD; full license text
       ships in <code>vendor/</code>. Map fonts: Noto Sans (SIL Open Font License). No
       trackers, no cookies, no analytics.</p>
 
@@ -539,6 +540,8 @@ export function initUI(app) {
 
   document.body.classList.toggle('lite', LITE);
   document.body.classList.toggle('kiosk', !!app.kiosk);
+  /* D4 — `?shot=1`. See style.css `body.shot`. */
+  document.body.classList.toggle('shot', !!app.shot);
   document.body.classList.add(isMobile() ? 'mobile' : 'desktop');
   if (!document.body.dataset.detent) document.body.dataset.detent = 'peek';
 

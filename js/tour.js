@@ -1,8 +1,8 @@
 /* =============================================================================
- * Jezero Explorer - tour.js
+ * Jez Explore - tour.js
  *
  * STORY MODE: the 8-stop guided tour (docs/frontend-design.md §4.10), the
- * dome-show companion. This module owns exactly one file. Every behaviour below
+ * dome-show companion. This module owns exactly one file. Every behavior below
  * is driven through the REAL, on-disk contracts of the other modules - the
  * design doc's sketches lose to what config.js / ui.js / map.js / hash.js /
  * timeline.js / flood.js / ingenuity.js actually export.
@@ -565,7 +565,7 @@ function flyToStop(stop) {
  * A stop that lands with terrain on leaves MapLibre's terrain anchor
  * (transform.elevation) at 0: every DEM tile the flight needs arrives DURING
  * the flight, while MapLibre's elevationFreeze is on, so its own re-derive
- * never runs. With the DEM now encoded +4000 m the ground under the centre is
+ * never runs. With the DEM now encoded +4000 m the ground under the center is
  * around +4,100 m, so a 0 anchor leaves the camera anchored ~4 km BELOW the
  * terrain: farZ collapses (2,273 instead of 20,097 at stop 5) and the scene
  * blacks out, AND Camera._elevateCameraIfInsideTerrain lifts the camera out of
@@ -649,7 +649,7 @@ async function enterStop(i, o = {}) {
     const opts = { minLevel: FLOOD_MIN_LEVEL, durationMs: FLOOD_MS };
     if (APP.flood && typeof APP.flood.animate === 'function') {
       /* flood.js's mobile/LITE fallback path leaves its promise pending when
-       * cancelled mid-stage (animateFallback's cancel() clears the stage timer
+       * canceled mid-stage (animateFallback's cancel() clears the stage timer
        * without resolving), so the await gets a deadline. */
       await withDeadline(APP.flood.animate(target, opts), FLOOD_MS + 9000);
     } else if (!runAction('flood:animate', target, opts)) {
@@ -889,7 +889,7 @@ function exitTour(o = {}) {
     }
     /* The go() is asynchronous and may deliver fewer events than asked for
      * (an embedded webview that refuses history writes delivers none), so the
-     * suppression is always released on a timer and the URL normalised then. */
+     * suppression is always released on a timer and the URL normalized then. */
     setTimeout(() => {
       unwinding = 0;
       APP.tourUnwinding = false;

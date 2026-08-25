@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer - views.js
+ * Jez Explore - views.js
  *
  * The VIEWS panel (docs/frontend-design.md §4.1 wireframe): six named views
  * from config.js BOOKMARKS, each one button, each one flyTo.
@@ -33,7 +33,7 @@
  * left it - "Whole crater" is a framing, not a 2D switch.
  *
  * app.settleTerrainView(cam) is called after the flight lands for the same
- * reason tour.js calls it: MapLibre leaves the centre elevation at 0 after a
+ * reason tour.js calls it: MapLibre leaves the center elevation at 0 after a
  * flight, so farZ collapses, the scene stops painting, and (since the DEM is
  * encoded +4000 m and the terrain is therefore ABOVE a 0 anchor) MapLibre's
  * "camera inside terrain" guard can lift the camera and rewrite the zoom. It is
