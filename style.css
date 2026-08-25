@@ -515,8 +515,16 @@ body.shot #kiosk-sol,
 body.shot #toasts { display: none !important; }
 body.shot #app { grid-template-columns: 1fr; }
 body.shot #map-wrap { grid-column: 1; }
-/* Attribution shrinks but never disappears — see the note above. */
-body.shot /* E1 (2026-08-25): the attribution styling that stood here is gone with the
+/* G3 (2026-08-25): a DANGLING SELECTOR lived here. E1 removed
+   `body.shot .maplibregl-ctrl-attrib { ... }` but left the `body.shot ` prefix
+   and its stale comment behind. CSS strips comments, so the parser read the
+   next rule as a descendant of it — `body.shot .maplibregl-popup` — quietly
+   scoping the popup's font declaration to capture mode only. Everything else
+   in the popup block was a separate rule and kept working, which is exactly
+   why the F6 fix verified green and this survived anyway. Found by reading the
+   file for an unrelated reason. */
+
+/* E1 (2026-08-25): the attribution styling that stood here is gone with the
    control itself. map.js no longer adds a MapLibre AttributionControl — the
    credits live in the About panel now, in full, instead of ellipsised into one
    line over the terrain.
