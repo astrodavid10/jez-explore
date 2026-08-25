@@ -1,0 +1,52 @@
+{
+  "generated": "2026-08-23",
+  "snapshot_sol": 1955,
+  "snapshot_date": "2026-08-20",
+  "body": {
+    "name": "Mars",
+    "radius_m": 3396190,
+    "proxy_radius_m": 6378137,
+    "scale": 1.878027
+  },
+  "vertical_datum": "Mars2000 areoid",
+  "imagery": {
+    "path": "tiles/img/{z}/{x}/{y}.webp",
+    "tileSize": 256,
+    "minzoom": 6,
+    "maxzoom": 15,
+    "bounds": [76.15996, 17.10996, 78.74005, 19.69005]
+  },
+  "imagery_hi": {
+    "path": "tiles/imghi/{z}/{x}/{y}.webp",
+    "tileSize": 256,
+    "minzoom": 16,
+    "maxzoom": 17,
+    "bounds": [77.22302, 18.30679, 77.58391, 18.66936]
+  },
+  "imagery_ultra": {
+    "url": "https://astrodavid10.github.io/jez-explore-z18/{z}/{x}/{y}.webp",
+    "tileSize": 256,
+    "minzoom": 18,
+    "maxzoom": 18,
+    "bounds": [77.22302, 18.30679, 77.58391, 18.66936],
+    "probe": "https://astrodavid10.github.io/jez-explore-z18/18/187470/117402.webp"
+  },
+  "dem": {
+    "path": "tiles/dem/{z}/{x}/{y}.png",
+    "encoding": "terrarium",
+    "tileSize": 256,
+    "minzoom": 6,
+    "maxzoom": 15,
+    "contour_maxzoom": 13,
+    "bounds": [76.15996, 17.10996, 78.74005, 19.69005],
+    "elev_min": -2720,
+    "elev_max": -1620,
+    "elev_offset": 4000
+  },
+  "credits": [
+    "Imagery: NASA/JPL-Caltech/UArizona (HiRISE) · NASA/JPL-Caltech/MSSS (CTX)",
+    "Elevation: HiRISE DTMs (NASA/JPL/UArizona) · HRSC (ESA/DLR/FU Berlin) · USGS Astrogeology",
+    "Traverse & flight data: NASA/JPL-Caltech (MMGIS)",
+    "Tiles & blend: A. David Weigel — INTUITIVE Planetarium, U.S. Space & Rocket Center"
+  ]
+}
