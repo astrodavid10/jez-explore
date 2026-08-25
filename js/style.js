@@ -267,6 +267,12 @@ function buildSources(manifest, demSource, opts) {
   sources['heli-paths'] = geo();
   /* Built client-side per selected flight by ingenuity.js. */
   sources['heli-ribbon'] = geo({ attribution: undefined });
+  /* E3: its OWN source, not a filtered view of heli-ribbon. The ribbon
+   * source is also where the replay's leader quad and hover hexagon are
+   * pushed each frame; sharing it would mean the floating path had to be
+   * re-serialised at replay frame rate for no reason, and any filter slip
+   * would show replay geometry as flight path. */
+  sources['heli-track'] = geo({ attribution: undefined });
   /* Not named in §3.1 but layer 27 (airfield-label) needs a home; ingenuity.js
    * fills it from heli-flights.json's from/to airfield names. Documented
    * addition, additive only. */
@@ -565,6 +571,32 @@ function buildLayers(manifest, demSource, opts) {
         'fill-extrusion-height': ['*', ['get', 'agl'], ['global-state', GLOBAL_STATE.VSCALE]],
         'fill-extrusion-base': 0,
         'fill-extrusion-vertical-gradient': true,
+      },
+    });
+  }
+
+  /* 20b — E3 (2026-08-25): the flight path floating at its TRUE altitude.
+   *
+   * The ribbon above is a curtain from the ground up to the helicopter, which
+   * answers "how high was it?" but not "what did the flight look like?". This
+   * layer is the trajectory itself: a slender box-section tube centred on the
+   * altitude, so with the camera tilted you see the actual arc — climb, cruise,
+   * descent — hanging in the air over the terrain it crossed.
+   *
+   * Same terrain-relative convention and the same vscale multiplication as the
+   * ribbon (ingenuity.js installs the paint expression for both), so the two
+   * agree at every exaggeration instead of drifting apart. No vertical
+   * gradient: this is a line, and a gradient would make a 3 m tube look hollow. */
+  if (keep('heli-track-3d')) {
+    layers.push({
+      id: 'heli-track-3d', type: 'fill-extrusion', source: 'heli-track',
+      layout: V(false),
+      paint: {
+        'fill-extrusion-color': PALETTE.heli,
+        'fill-extrusion-opacity': 0.95,
+        'fill-extrusion-height': ['*', ['get', 'top_m'], ['global-state', GLOBAL_STATE.VSCALE]],
+        'fill-extrusion-base': ['*', ['get', 'base_m'], ['global-state', GLOBAL_STATE.VSCALE]],
+        'fill-extrusion-vertical-gradient': false,
       },
     });
   }
