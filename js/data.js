@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer — data.js
+ * Jez Explore — data.js
  *
  * Loads the pipeline's data/ files into the (initially empty) GeoJSON sources
  * and provides the two live NASA helpers.

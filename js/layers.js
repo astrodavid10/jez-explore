@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer — layers.js
+ * Jez Explore — layers.js
  *
  * Owns the LAYERS sidebar panel and the map popups (docs/frontend-design.md
  * §4.1 wireframe, §4.8 popups, §3.2 layer-id table, §0.6 raw-images API).
@@ -24,7 +24,7 @@
  *
  * Failure philosophy (§7), matched here:
  *   - A layer missing from the style (LITE_OMIT_LAYERS, or contours when
- *     maplibre-contour failed to init) makes its toggle grey and disabled,
+ *     maplibre-contour failed to init) makes its toggle gray and disabled,
  *     never a throw — `map.getLayer(id)` is checked before every mutation.
  *   - A dataset that fails to load (`data:missing`) disables the toggle that
  *     depends on it; a later successful load (`data` ok:true, e.g. the
@@ -63,12 +63,28 @@ function escapeHtml(s) {
   }[c]));
 }
 
-/** ISO baked date (§0.5) -> "March 12, 2024"; verbatim fallback, never throws. */
+/**
+ * ISO baked date (§0.5) -> "March 12, 2024"; verbatim fallback, never throws.
+ *
+ * BOTH halves must be pinned to UTC. `new Date('2021-09-06')` is parsed as UTC
+ * midnight by spec, and `toLocaleDateString` then renders it in the VIEWER's
+ * timezone — so anywhere west of Greenwich every date in the app displayed one
+ * day early. Found 2026-08-24 on the Montdenier sample: sol 194, ISO
+ * 2021-09-06, rendered "September 5, 2021" in US Central. It hit every
+ * waypoint and sample popup, not just this one.
+ *
+ * timeline.js's formatEarthDate() already did this correctly with an
+ * Intl.DateTimeFormat pinned to UTC; this is the same fix, and the two now
+ * agree for any given sol.
+ */
+const DATE_FMT = new Intl.DateTimeFormat('en-US', {
+  month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+});
 function friendlyDate(iso) {
   if (!iso) return '';
-  const d = new Date(iso);
+  const d = new Date(`${iso}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return escapeHtml(String(iso));
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return DATE_FMT.format(d);
 }
 
 /** "56_0" -> {site:"56", drive:"0"}; unrecognised formats show verbatim. */
@@ -491,7 +507,7 @@ function buildLayersPanel(body, app) {
   buildContoursControl(body, app);
   buildSimpleToggle(body, app, { key: 'hs', label: 'Hillshade' });
   buildSimpleToggle(body, app, {
-    key: 'hyp', label: 'Elevation colours', unavailableHint: 'Not available in Lite mode.',
+    key: 'hyp', label: 'Elevation colors', unavailableHint: 'Not available in Lite mode.',
   });
   buildPaleolakeControl(body, app);
   buildSimpleToggle(body, app, { key: 'wp', label: 'Waypoints', dataKeys: ['waypoints'] });
@@ -632,28 +648,82 @@ function wireWaypointPopup(app) {
   });
 }
 
-/* --- sample popup --------------------------------------------------------- */
+/* --- sample popup ---------------------------------------------------------
+ * D1 (2026-08-24). Rewritten for p08's cleaned schema. The old version read
+ * `sample_name` / `sample_type` / `sample_location` and had to display sol and
+ * date "verbatim, never parsed" because NASA ships them as free text ("194 &
+ * 196", "Sept. 6&8, 2021", "TBD"). p08 now does that parsing once, at build
+ * time, and emits both halves: machine-readable `sol`/`sols`/`date` AND the
+ * original `num`/`date_text` for display. So this popup can finally be
+ * specific — how many tubes, which sols, what rock — without guessing.
+ *
+ * One drill site can hold two tubes (Perseverance usually takes a pair), which
+ * is why `name` may read "Montdenier + Montagnac" and `num` "2 & 3". They are
+ * shown as one site because that is physically what they are: one hole.
+ * ------------------------------------------------------------------------ */
 function samplePopupHTML(props) {
-  const name = props.sample_name || props.sample_num || 'Sample';
-  const rows = [];
-  if (props.sample_type) rows.push(`Type: ${escapeHtml(props.sample_type)}`);
-  if (props.rock_type) rows.push(`Rock type: ${escapeHtml(props.rock_type)}`);
-  if (props.sample_location) rows.push(`Location: ${escapeHtml(props.sample_location)}`);
+  const names = parseJSONProp(props.names) || [];
+  const sols = parseJSONProp(props.sols) || [];
+  const nTubes = Number(props.n_tubes) || names.length || 1;
+  const title = props.name || props.num || 'Sample';
 
-  /* §2 gotcha: sol/date may be raw strings ("194 & 196", "TBD") rather than a
-   * clean number/ISO date — display verbatim, never Number()/Date() parsed. */
-  const solDate = [];
-  if (props.sol !== undefined && props.sol !== null && String(props.sol) !== '') {
-    solDate.push(`Sol ${escapeHtml(String(props.sol))}`);
+  const rows = [];
+  if (props.type) {
+    const tubes = nTubes > 1 ? ` · ${nTubes} tubes` : '';
+    rows.push(`${escapeHtml(String(props.type))}${tubes}`);
   }
-  if (props.date) solDate.push(escapeHtml(String(props.date)));
+  if (props.rock_type) rows.push(`Rock: ${escapeHtml(String(props.rock_type))}`);
+  if (props.outcrop) rows.push(`Outcrop: ${escapeHtml(String(props.outcrop))}`);
+  if (props.location) rows.push(`Location: ${escapeHtml(String(props.location))}`);
+  if (Number.isFinite(Number(props.depth_cm)) && Number(props.depth_cm) > 0) {
+    rows.push(`Core length: ${Number(props.depth_cm).toFixed(1)} cm`);
+  }
+  if (Number.isFinite(Number(props.elev))) {
+    rows.push(`Elevation: ${formatSigned(Number(props.elev))} m`);
+  }
+  /* Tube numbers and names, when a site holds more than one. */
+  if (nTubes > 1 && names.length) {
+    rows.push(`Tubes ${escapeHtml(String(props.num))}: ${names.map(escapeHtml).join(', ')}`);
+  }
+
+  /* Sol line: prefer the parsed ints (so "sol 194 & 196" reads properly), fall
+   * back to the verbatim NASA text if a future refresh breaks the parse. */
+  const solTxt = sols.length > 1
+    ? `Sols ${sols.join(' & ')}`
+    : (Number.isFinite(Number(props.sol)) ? `Sol ${props.sol}` : '');
+  const dateTxt = props.date ? friendlyDate(props.date)
+    : (props.date_text ? String(props.date_text) : '');
+  const foot = [solTxt, dateTxt].filter(Boolean).map(escapeHtml).join(' · ');
 
   return `
-    <div class="pop-head">Sample</div>
-    <div class="pop-title">${escapeHtml(String(name))}</div>
+    <div class="pop-head">Sample${nTubes > 1 ? 's' : ''}</div>
+    <div class="pop-title">${escapeHtml(String(title))}</div>
     ${rows.map((r) => `<div class="pop-row">${r}</div>`).join('')}
-    ${solDate.length ? `<div class="pop-row hint">${solDate.join(' · ')}</div>` : ''}
+    ${foot ? `<div class="pop-row hint">${foot}</div>` : ''}
   `;
+}
+
+/**
+ * MapLibre serialises array/object feature properties to JSON STRINGS when they
+ * come back out of queryRenderedFeatures — `names` and `sols` arrive as
+ * '["Montdenier","Montagnac"]', not as arrays. Parse defensively: a future
+ * MapLibre could hand back the real array, and a malformed string must not
+ * take the popup down.
+ */
+function parseJSONProp(v) {
+  if (Array.isArray(v)) return v;
+  if (typeof v !== 'string') return null;
+  try {
+    const out = JSON.parse(v);
+    return Array.isArray(out) ? out : null;
+  } catch {
+    return null;
+  }
+}
+
+/** "−2574.3" with a real typographic minus, matching the elevation readout. */
+function formatSigned(v) {
+  return (v < 0 ? '−' : '') + Math.abs(v).toFixed(1);
 }
 
 function wireSamplePopup(app) {

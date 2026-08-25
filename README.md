@@ -1,4 +1,4 @@
-# Jezero Explorer — `site/`
+# Jez Explore — `site/`
 
 Static web app: a zoomable map of Jezero Crater with Perseverance's traverse, Ingenuity's
 flights, 3D terrain, contours and the paleolake. No build step, native ES modules, two vendored
@@ -30,7 +30,7 @@ Nothing else is required: no npm install, no bundler, no environment variables.
 
 The app is designed to come up on an empty repository (§7 of the frontend design):
 
-| Missing | Behaviour |
+| Missing | Behavior |
 |---|---|
 | `tiles/manifest.json` | `js/manifest.js` falls back to the pipeline contract defaults and logs it; the app still boots |
 | `tiles/img/**`, `tiles/imghi/**` | raster layers render nothing; you see the `#0a0a0c` background layer. Map pans, zooms, clamps to bounds |
@@ -59,7 +59,7 @@ js/
   boot.js       WebGL2 gate, CDN→vendor library fallback (3 tiers), glyph sanity fetch
   config.js     *** FROZEN CONTRACTS *** LAYER_IDS, HASH_KEYS, GLOBAL_STATE, DATA_FILES,
                 TOUR (8 stops), BOOKMARKS, SCALE fallback, palette
-  manifest.js   loads tiles/manifest.json, probes the z18 pack, normalises
+  manifest.js   loads tiles/manifest.json, probes the z18 pack, normalizes
   style.js      buildStyle(manifest, demSource, opts) → the whole style object
   map.js        DemSource → Map, Mars scale bar, 3D + exaggeration, elevation readout, markers
   hash.js       #@lon,lat,zoom,pitch,bearing&… (frozen short keys), replaceState/pushState
@@ -101,7 +101,7 @@ Both are generated — never hand-edited — by the pipeline in `../pipeline/`:
 - `tiles/img/`, `tiles/imghi/` ← `p04_warp_imagery.py` + `p05_tile_imagery.py`
   (WebP q80, WebMercatorQuad, XYZ, 256 px)
 - `tiles/dem/` ← `p06_dem_merge_warp.py` + `p07_terrarium.py`
-  (Terrarium PNG, 256 px, quantised to 1/16 m; `.encoder.json` stamps the format)
+  (Terrarium PNG, 256 px, quantized to 1/16 m; `.encoder.json` stamps the format)
 - `tiles/manifest.json` ← the pipeline; **single source of truth** for paths, zoom caps,
   bounds and `body.scale` (1.878027). Nothing in `js/` may hardcode those numbers
 - `data/*.geojson`, `data/*.json` ← `p08_vectors.py`, `p10_contour_ring.py` from the NASA

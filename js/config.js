@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer — config.js
+ * Jez Explore — config.js
  *
  *                        *** FROZEN CONTRACTS ***
  *
@@ -27,7 +27,7 @@
  * The tiles are Mars data relabelled into a "pretend Earth" WebMercatorQuad
  * grid, so all horizontal distances come out inflated by
  *     SCALE = 6378137 / 3396190 = 1.878027
- * while DEM values stay true Mars metres. Read the real value from
+ * while DEM values stay true Mars meters. Read the real value from
  * tiles/manifest.json (body.scale); this constant is only the fallback used if
  * the manifest cannot be loaded. Never hardcode 1.878027 anywhere else.
  * -------------------------------------------------------------------------- */
@@ -75,14 +75,14 @@ export const LAYER_IDS = [
   'imagery',              //  2  raster z6–15
   'imagery-hi',           //  2b raster z16–17
   'imagery-ultra',        //  3  raster z18 (cross-origin pack; added only if probed)
-  'hypsometric',          //  4  color-relief elevation colours
+  'hypsometric',          //  4  color-relief elevation colors
   'flood-fill',           //  5  paleolake polygons
   'flood-tide',           //  6  color-relief animated tide (desktop/tour only)
   'hillshade',            //  7  hillshade — ON by default
   /* A5 (2026-08-24): each contour line now sits on a dark CASING drawn just
    * underneath it — the USGS-topo trick. Tan lines on tan Mars were nearly
    * invisible at crater scale; a casing separates the line from the terrain
-   * without having to shout with colour. The casings carry zero opacity in the
+   * without having to shout with color. The casings carry zero opacity in the
    * 'subtle' preset, so the default look is a line, not a line-plus-outline.
    * Additive to this frozen list: no existing id moved, so printed QR links
    * keep working (they address short keys, and `cr`/`crf` simply cover more
@@ -103,7 +103,7 @@ export const LAYER_IDS = [
   'traverse-done',        // 16  drives up to the current sol — ON by default
   'traverse-progress',    // 17  line-gradient reveal of the drive in progress
   'heli-path',            // 18  all flight ground tracks up to the current sol
-  'heli-path-sel',        // 19  selected flight, emphasised
+  'heli-path-sel',        // 19  selected flight, emphasized
   'heli-ribbon',          // 20  fill-extrusion altitude ribbon
   'waypoints-dot',        // 21  end-of-drive parking spots
   'waypoints-hit',        // 22  invisible 16 px touch target for the above
@@ -174,7 +174,7 @@ export const GLOBAL_STATE = {
   SOL: 'sol',       // integer sol — filters traverse/waypoints/heli-path
   FLIGHT: 'flight', // selected Ingenuity flight number — filters heli-path-sel
   VSCALE: 'vscale', // SCALE * uiExaggeration — scales the altitude ribbon
-  FLOOD: 'flood',   // paleolake water level in metres (areoid)
+  FLOOD: 'flood',   // paleolake water level in meters (areoid)
 };
 
 /* -----------------------------------------------------------------------------
@@ -203,7 +203,7 @@ export const DATA_FILES = {
 /** Lazily fetched per-flight altitude arrays. NN is zero-padded to 2 digits. */
 export const HELI_ALT_TEMPLATE = 'data/heli-alt/flight-{NN}.json';
 
-/** Paleolake levels in metres (areoid), shallow → deep. */
+/** Paleolake levels in meters (areoid), shallow → deep. */
 export const PALEOLAKE_LEVELS = [-2500, -2450, -2395, -2350];
 
 /** The mapped-out highstand — where NASA found carbonates on the inner margin. */
@@ -229,7 +229,7 @@ export const NASA = {
 };
 
 /* -----------------------------------------------------------------------------
- * Palette — house dark theme plus the map-specific colours from §3
+ * Palette — house dark theme plus the map-specific colors from §3
  * -------------------------------------------------------------------------- */
 export const PALETTE = {
   /* house chrome (mirrored in style.css custom props) */
@@ -325,16 +325,25 @@ export const CONTOUR_STYLE = {
     fineMajorCase: { color: '#1a1208', w: [0.0, 0.0], o: [0.00, 0.00] },
     label: { color: '#e0d4b6', halo: '#1a1510', haloWidth: 1.4, size: 10 },
   },
+  /* Bold is LIGHT BLUE, not cream (David, 2026-08-24: "make it a nice light
+   * blue color to really pop"). Blue is the direct complement of Jezero's
+   * rust-and-tan terrain, so it separates from the ground far harder than any
+   * warm line can - a cream contour is fighting the same hue family as the
+   * dust. The two blues carry the hierarchy: the index (major) line is the
+   * paler, brighter one so it reads as the one carrying the number, with the
+   * more saturated sky blue for the intermediate lines. Casings are tinted
+   * blue-black rather than neutral so the pairing does not read as two
+   * unrelated colors at small sizes. Kin to the house accent #5ad0ff. */
   bold: {
-    minor:     { color: '#ffe9b8', w: [0.9, 1.5], o: [0.85, 0.85] },
-    major:     { color: '#fff4d8', w: [1.8, 2.8], o: [1.00, 1.00] },
-    minorCase: { color: '#20160c', w: [2.0, 3.4], o: [0.55, 0.55] },
-    majorCase: { color: '#1a1208', w: [3.2, 5.0], o: [0.70, 0.70] },
-    fineMinor:     { color: '#ffe9b8', w: [0.7, 1.2], o: [0.85, 0.85] },
-    fineMajor:     { color: '#fff4d8', w: [1.4, 2.2], o: [1.00, 1.00] },
-    fineMinorCase: { color: '#20160c', w: [1.8, 2.8], o: [0.55, 0.55] },
-    fineMajorCase: { color: '#1a1208', w: [2.6, 4.0], o: [0.70, 0.70] },
-    label: { color: '#fff6e0', halo: '#120d06', haloWidth: 2.0, size: 11 },
+    minor:     { color: '#6fd3f7', w: [0.9, 1.5], o: [0.88, 0.88] },
+    major:     { color: '#cdeeff', w: [1.8, 2.8], o: [1.00, 1.00] },
+    minorCase: { color: '#07131c', w: [2.0, 3.4], o: [0.55, 0.55] },
+    majorCase: { color: '#050e15', w: [3.2, 5.0], o: [0.72, 0.72] },
+    fineMinor:     { color: '#6fd3f7', w: [0.7, 1.2], o: [0.88, 0.88] },
+    fineMajor:     { color: '#cdeeff', w: [1.4, 2.2], o: [1.00, 1.00] },
+    fineMinorCase: { color: '#07131c', w: [1.8, 2.8], o: [0.55, 0.55] },
+    fineMajorCase: { color: '#050e15', w: [2.6, 4.0], o: [0.72, 0.72] },
+    label: { color: '#e6f6ff', halo: '#04101a', haloWidth: 2.0, size: 11 },
   },
 };
 
@@ -395,7 +404,7 @@ export const BOOKMARKS = [
  *
  * `layers` lists the hash ON_KEYS visible at that stop (the tour sets layer
  * state from these, so a stop's layer set is expressible as a permalink).
- * `action` names an optional behaviour the owning feature module implements.
+ * `action` names an optional behavior the owning feature module implements.
  * -------------------------------------------------------------------------- */
 export const TOUR = [
   {
@@ -406,7 +415,7 @@ export const TOUR = [
     terrain: false,
     layers: ['hs', 'ell', 'places'],
     caption:
-      'On February 18, 2021, Perseverance dropped into this 45-kilometre bowl — Jezero Crater — ' +
+      'On February 18, 2021, Perseverance dropped into this 45-kilometer bowl — Jezero Crater — ' +
       'and touched down right here, at a spot the team named for the writer Octavia E. Butler. ' +
       'The thin white outline is the target it had to hit.',
   },
@@ -434,7 +443,7 @@ export const TOUR = [
     action: 'flood-rise',      // flood module animates the tide up to −2395 m
     flood: HIGHSTAND_M,
     caption:
-      "Raise the water to about 2,395 metres below Mars' zero elevation and the whole crater floor " +
+      "Raise the water to about 2,395 meters below Mars' zero elevation and the whole crater floor " +
       "disappears. The shoreline lands exactly where Perseverance found carbonate-rich rock along " +
       "the crater's inner margin — the kind of rock that forms in water.",
   },
@@ -449,7 +458,7 @@ export const TOUR = [
     speed: 'fast',
     caption:
       "Every gold dot is a place the rover parked at the end of a day's drive. Watch five and a half " +
-      'Earth years compress into thirty seconds — a little over 45 kilometres, every metre of it ' +
+      'Earth years compress into thirty seconds — a little over 45 kilometers, every meter of it ' +
       'steered by drivers on Earth, one Martian day at a time.',
   },
   {
@@ -498,7 +507,7 @@ export const TOUR = [
     terrain: true,
     layers: ['hs', 'cr', 'wp', 'places'],
     caption:
-      'Perseverance is here now, more than six hundred metres higher than where it landed, up on the ' +
+      'Perseverance is here now, more than six hundred meters higher than where it landed, up on the ' +
       "crater's western rim. The rock up here was shattered and lifted by the impact that dug the crater " +
       '— the oldest material the rover has ever touched.',
   },
@@ -511,7 +520,7 @@ export const TOUR = [
  * overlapped the scale bar (integration pass 2026-08-23). Full per-dataset
  * credits live in the About panel and per-source attribution strings. */
 export const ATTRIBUTION = [
-  'NASA/JPL-Caltech · UArizona/HiRISE · MSSS · ESA/DLR/FU Berlin · USGS · INTUITIVE Planetarium',
+  'NASA/JPL-Caltech · UArizona/HiRISE · MSSS · ESA/DLR/FU Berlin · USGS · INTUITIVE® Planetarium',
 ];
 
 /** Per-source attribution strings, attached to the style sources. */

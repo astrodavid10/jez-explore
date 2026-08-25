@@ -1,5 +1,5 @@
 /* =============================================================================
- * Jezero Explorer — style.js
+ * Jez Explore — style.js
  *
  * buildStyle(manifest, demSource, opts) → a plain MapLibre style object.
  * Implements docs/frontend-design.md §3 (sources, the 29 layers of the §3.2
@@ -28,8 +28,8 @@
  *    h + `manifest.dem.elev_offset` (4000 m) so the tiles carry no negative
  *    values. Consequences for this file, all of them local:
  *      · `['elevation']` inside a color-relief ramp reads the ENCODED value, so
- *        every colour stop in hypsometricRamp() and floodRamp() is written as
- *        realMetres + offset. Callers keep passing REAL metres.
+ *        every color stop in hypsometricRamp() and floodRamp() is written as
+ *        realMetres + offset. Callers keep passing REAL meters.
  *      · maplibre-contour's `ele` property is likewise encoded, so the contour
  *        LABEL subtracts the offset — but the contour THRESHOLDS do not change
  *        at all. They are intervals (2000/1000/500/250/200/100/50/20/10 m) and
@@ -76,8 +76,8 @@ export function hillshadeExaggeration(mult = 1) {
 }
 
 /**
- * Hypsometric ramp for the "Elevation colours" layer. Static −2750 → −1550 in
- * REAL metres, covering the full Jezero range with headroom at both ends.
+ * Hypsometric ramp for the "Elevation colors" layer. Static −2750 → −1550 in
+ * REAL meters, covering the full Jezero range with headroom at both ends.
  * @param {number} [offset] manifest.dem.elev_offset — added to every stop
  *   because `['elevation']` yields the ENCODED value (see header note 3).
  */
@@ -103,8 +103,8 @@ function hypsometricRamp(offset = 0) {
  * because interpolate stops cannot read global state: the flood module calls
  * map.setPaintProperty('flood-tide','color-relief-color', floodRamp(level, off))
  * on each animation step (throttled to ~12 fps).
- * @param {number} L water level in REAL metres (areoid) — global-state `flood`
- *   and every caller stay in real metres; the conversion happens only here.
+ * @param {number} L water level in REAL meters (areoid) — global-state `flood`
+ *   and every caller stay in real meters; the conversion happens only here.
  * @param {number} [offset] manifest.dem.elev_offset (see header note 3).
  */
 export function floodRamp(L, offset = 0) {
@@ -229,7 +229,7 @@ function buildSources(manifest, demSource, opts) {
   sources['dem-terrain'] = { ...demDef };
   sources['dem-shade'] = { ...demDef };
 
-  /* Contour vector tiles, synthesised on the fly by maplibre-contour from the
+  /* Contour vector tiles, synthesized on the fly by maplibre-contour from the
    * same terrarium PNGs. maxzoom = DEM ceiling + 1 so MapLibre overzooms the
    * deepest generated tile rather than asking for one that cannot exist. */
   if (demSource) {
@@ -324,7 +324,7 @@ function buildLayers(manifest, demSource, opts) {
    * than hiding them — a hidden color-relief layer still costs tile decode. */
   const keep = (id) => !(opts.lite && LITE_OMIT_LAYERS.includes(id));
 
-  /* 4 — hypsometric elevation colours (omitted entirely in lite mode) */
+  /* 4 — hypsometric elevation colors (omitted entirely in lite mode) */
   if (keep('hypsometric')) {
     layers.push({
       id: 'hypsometric', type: 'color-relief', source: 'dem-shade',
@@ -544,10 +544,32 @@ function buildLayers(manifest, demSource, opts) {
   /* 23 — sample tubes */
   layers.push({
     id: 'samples-dot', type: 'circle', source: 'samples',
+    /* D1 (2026-08-24) — sample tubes now appear as the timeline reaches them,
+     * which is the whole point of putting them on a sol slider: you watch the
+     * cache accumulate across five and a half years instead of seeing all 29
+     * tubes from sol 0. This filter could not exist before, because p08 emitted
+     * `sol` as a STRING ("194 & 196" for a paired drill site) and a string
+     * never satisfies `<=` against a number. p08 now emits `sol` as the int of
+     * the FIRST sol of the pair, plus `sol_last`/`sols` for display. */
+    filter: SOL_DONE,
     layout: V(true),
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 16, 7],
-      'circle-color': PALETTE.sample,
+      /* A two-tube site draws slightly larger — the only honest way to show
+       * that 21 dots stand for 29 tubes without inventing a second point at
+       * the same drill hole. */
+      'circle-radius': [
+        'interpolate', ['linear'], ['zoom'],
+        10, ['case', ['>', ['get', 'n_tubes'], 1], 5, 4],
+        16, ['case', ['>', ['get', 'n_tubes'], 1], 8.5, 7],
+      ],
+      /* Rock cores are the mission's product; the atmospheric and regolith
+       * tubes are different experiments and read as their own thing. */
+      'circle-color': [
+        'match', ['get', 'type'],
+        'Atmospheric', PALETTE.accent,
+        'Regolith', '#c9a227',
+        PALETTE.sample,
+      ],
       'circle-stroke-color': '#ffffff',
       'circle-stroke-width': 1.2,
     },
@@ -577,9 +599,13 @@ function buildLayers(manifest, demSource, opts) {
   layers.push({
     id: 'samples-label', type: 'symbol', source: 'samples',
     minzoom: 14,
+    filter: SOL_DONE,
     layout: {
       ...V(true),
-      'text-field': ['get', 'sample_name'],
+      /* D1: `sample_name` no longer exists — p08's new schema calls it `name`.
+       * A stale ['get'] here does not error, it just renders nothing, so every
+       * sample label had silently vanished the moment the schema changed. */
+      'text-field': ['get', 'name'],
       'text-font': ['Noto Sans Regular'],
       'text-size': 11,
       'text-offset': [0, 1.1],
@@ -605,7 +631,7 @@ function buildLayers(manifest, demSource, opts) {
         'symbol-placement': 'line-center',
         'text-field': contourLabelText(eOff),
         'text-font': ['Noto Sans Regular'],
-        /* A6: size/colour/halo follow the emphasis preset too, so a Bold map
+        /* A6: size/color/halo follow the emphasis preset too, so a Bold map
          * does not end up with heavyweight lines and hairline numbers. */
         'text-size': contourLabelStyle(contourPreset).size,
         'text-padding': 8,
@@ -649,7 +675,7 @@ function buildLayers(manifest, demSource, opts) {
 /**
  * @param {object} manifest resolved manifest from manifest.js
  * @param {object|null} demSource maplibre-contour DemSource, or null if the
- *        library failed to initialise (contours are then omitted, §7)
+ *        library failed to initialize (contours are then omitted, §7)
  * @param {object} [opts]
  * @param {boolean} [opts.lite]    drop the expensive layers entirely (§5)
  * @param {boolean} [opts.terrain] 3D on at build time (scales hillshade ×0.4)
@@ -662,7 +688,7 @@ export function buildStyle(manifest, demSource, opts = {}) {
 
   const style = {
     version: 8,
-    name: 'Jezero Explorer',
+    name: 'Jez Explore',
     /* Explicit — never let v6 decide to render a globe. */
     projection: { type: 'mercator' },
     glyphs: 'fonts/{fontstack}/{range}.pbf',
@@ -678,7 +704,7 @@ export function buildStyle(manifest, demSource, opts = {}) {
      *     for (const k in state) this._globalState[k] = state[k].default
      * so each entry MUST be an object with a `default` key. A bare value
      * (`{ sol: 1955 }`) validates fine — the `state` validator only checks
-     * "is an object" — and then silently initialises every property to
+     * "is an object" — and then silently initializes every property to
      * undefined, which makes every global-state filter evaluate against
      * undefined and hides the traverse/waypoint layers at load. The design doc
      * §3 sketch shows the bare-value form; this is the corrected shape. */

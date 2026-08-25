@@ -353,6 +353,75 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 #exag-wrap label { color: var(--muted); display: block; margin-bottom: 2px; }
 #exag-wrap output { display: block; text-align: right; color: var(--text); margin-top: -6px; }
 
+/* ---------------------------------------------------------------------------
+ * D10 — INTUITIVE(R) Planetarium emblem, top-left of the map.
+ *
+ * Top-left is the only corner nothing else claims: #map-tools owns top-right,
+ * #readout owns bottom-left, MapLibre's attribution owns bottom-right.
+ *
+ * Sized 40 px but with a 44 px minimum box, because 44 px is the Apple/WCAG
+ * touch floor and this is a link a thumb has to hit on a phone. The radial
+ * halo is doing real work: the emblem is solid white with a transparent
+ * background and Jezero's dunes are bright, so without it the glyph vanishes
+ * over pale terrain. A gradient rather than a chip, so it reads as chrome
+ * rather than a badge stuck onto the map.
+ *
+ * Kept visible in kiosk mode, unlike #map-tools and #readout which are hidden
+ * there: those are CONTROLS, and the dome is precisely the context where the
+ * planetarium's own mark belongs.
+ * ------------------------------------------------------------------------ */
+#brand-mark {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0) 70%);
+  opacity: 0.78;
+  transition: opacity 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+#brand-mark img {
+  width: 34px;
+  height: 34px;
+  display: block;
+  pointer-events: none;
+}
+#brand-mark:hover,
+#brand-mark:focus-visible { opacity: 1; }
+#brand-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* The tour dims the chrome; the emblem goes with it rather than standing proud
+ * of a darkened map. */
+body.tour #brand-mark { opacity: 0.35; }
+
+/* ---------------------------------------------------------------------------
+ * D11 — *INTUITIVE*(R) wordmark treatment, from Planetarium_Brand_Kit_V7 p1:
+ * INTUITIVE is set in BOLD ITALIC CAPS with a superscript (R) immediately
+ * after it, PLANETARIUM upright. Prose that cannot carry italics (meta tags,
+ * the map attribution string, ABOUT.md) uses "INTUITIVE(R) Planetarium".
+ * ------------------------------------------------------------------------ */
+.brand-intuitive {
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.brand-reg {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.62em;
+  vertical-align: super;
+  line-height: 0;
+  margin-left: 0.5px;
+}
+
 #readout {
   position: absolute;
   left: 10px; bottom: 10px;
@@ -425,6 +494,29 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 #kiosk-sol .sub { display: block; font-size: 17px; font-weight: 400; color: #cfcfcf; }
 
 body.kiosk #dock, body.kiosk #topbar, body.kiosk #map-tools, body.kiosk #readout { display: none; }
+
+/* ---------------------------------------------------------------------------
+ * D4 — capture mode (`?shot=1`). Every scrap of UI off, map full-bleed, so a
+ * screenshot is publication-ready without cropping a sidebar out by hand.
+ *
+ * Distinct from kiosk on purpose: kiosk keeps the big SOL readout and the
+ * planetarium emblem because it is a STAFFED dome display. Capture keeps
+ * NOTHING except the attribution, which stays because NASA/ESA/USGS credit is
+ * a condition of using the imagery, not a piece of chrome we get to hide.
+ * ------------------------------------------------------------------------ */
+body.shot #dock,
+body.shot #topbar,
+body.shot #map-tools,
+body.shot #readout,
+body.shot #brand-mark,
+body.shot #tour-card,
+body.shot #sol-pill,
+body.shot #kiosk-sol,
+body.shot #toasts { display: none !important; }
+body.shot #app { grid-template-columns: 1fr; }
+body.shot #map-wrap { grid-column: 1; }
+/* Attribution shrinks but never disappears — see the note above. */
+body.shot .maplibregl-ctrl-attrib { font-size: 9px; opacity: 0.55; }
 body.kiosk #app { grid-template-columns: 1fr; }
 body.kiosk #map-wrap { grid-column: 1; }
 
@@ -548,6 +640,22 @@ body.kiosk #map-wrap { grid-column: 1; }
    end of the bottom-right control column and clears the bottom-left readout.
    Nothing is lost — the control still expands on tap, and the About panel
    carries the per-dataset credits (§6). */
+/* Expanded state, driven by map.js's own (i) handler rather than MapLibre's.
+   The default one-liner above stays; this is what you get after a deliberate
+   tap, and it shows every credit in full because those are a condition of
+   using the NASA/ESA/DLR/USGS imagery, not chrome we can quietly clip. */
+.maplibregl-ctrl-attrib.jz-attrib-open .maplibregl-ctrl-attrib-inner {
+  white-space: normal;
+  text-overflow: clip;
+  overflow: visible;
+  max-width: min(46ch, calc(100vw - 76px));
+  line-height: 1.45;
+}
+.maplibregl-ctrl-attrib.jz-attrib-open {
+  max-width: min(48ch, calc(100vw - 24px));
+  padding-bottom: 2px;
+}
+
 .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-inner {
   display: block;
   /* 76px, not 32: the control's own padding plus the (i) button add ~46 px, and
@@ -571,6 +679,17 @@ body.kiosk #map-wrap { grid-column: 1; }
  * ======================================================================== */
 @media (max-width: 899px) {
   #app { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+
+  /* D7 (2026-08-24) — one 3D control on phones, not two. The topbar carries
+     #btn-3d-mobile and #map-tools carries #btn-3d; on a phone both were on
+     screen at once, 60 px apart, doing exactly the same thing (map.js keeps
+     their aria-pressed in step, so they even looked identical). The topbar one
+     wins: it is in the thumb's reach and it does not sit on the terrain.
+     Hiding rather than removing keeps map.js's two-button wiring untouched. */
+  #map-tools #btn-3d { display: none; }
+
+  /* D10: below the mobile topbar, which overlays the top of the map. */
+  #brand-mark { top: calc(var(--topbar-h) + var(--safe-t) + 8px); }
 
   #topbar {
     position: fixed;
@@ -766,10 +885,42 @@ body.kiosk #map-wrap { grid-column: 1; }
   }
 }
 
-/* Pointer-coarse devices: no hover affordances, bigger targets. */
+/* ---------------------------------------------------------------------------
+ * Pointer-coarse devices: no hover affordances, bigger targets.
+ *
+ * D2 (2026-08-24) — audited at 390x844, 360x800 and 844x390 with real touch
+ * emulation, measuring every rendered control. The 44 px floor is Apple HIG
+ * and WCAG 2.5.5; every exception below was a MEASURED miss, not a guess:
+ *
+ *   #tabs button        38 px tall  -> the four bottom-sheet tabs
+ *   button.primary      40 px tall  -> "START THE TOUR", shrunk by the mobile
+ *                                      dock-head rule at line ~748
+ *   .link-btn           32 px tall  -> "Where is Percy now?", "Copy link"
+ *   .toggle             26 px tall  -> every layer checkbox row; the LABEL is
+ *                                      the tap target, so growing the label is
+ *                                      what matters, not the 15 px box
+ *   .row .btn           41 px wide  -> "Fast" in the Slow/Normal/Fast segment
+ *
+ * Gated on (hover: none) rather than a width breakpoint on purpose: a touch
+ * laptop needs the big targets and a narrow desktop window does not.
+ * ------------------------------------------------------------------------ */
 @media (hover: none) {
-  .btn { min-height: var(--tap); }
-  .link-btn { min-height: 32px; }
+  .btn { min-height: var(--tap); min-width: var(--tap); }
+  .link-btn { min-height: var(--tap); display: inline-flex; align-items: center; }
+  #tabs button { min-height: var(--tap); }
+  #dock-head button.primary { min-height: var(--tap); }
+  body[data-detent="peek"] #dock-head button.primary { min-height: var(--tap); }
+  /* The label is the hit target; the box just has to be legible next to it. */
+  .toggle { min-height: var(--tap); }
+  .toggle input[type="checkbox"] { width: 18px; height: 18px; }
+  /* The sheet grip is a 26 px bar for looks; widen only what a thumb hits. */
+  #dock-handle { position: relative; }
+  #dock-handle::after {
+    content: "";
+    position: absolute;
+    inset: -9px -9px;
+    /* no paint — hit area only */
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
