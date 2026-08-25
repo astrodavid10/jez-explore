@@ -252,13 +252,11 @@ function setHeliModeOn(on) {
  * this on every repaint, so the button follows the data instead of a snapshot
  * of it taken before the data existed.
  */
-function updateModeButton() {
-  const btn = panelBody && panelBody.querySelector('#ing-mode-btn');
-  if (!btn) return;
-  btn.disabled = !flightsIndex.length;
-  btn.setAttribute('aria-pressed', String(heliModeOn));
-  btn.textContent = heliModeOn ? 'Exit Ingenuity mode' : 'Enter Ingenuity mode';
-}
+/* E2: there is no mode button any more. Kept as a no-op rather than deleted
+ * because renderList() and setHeliModeOn() both call it on every repaint,
+ * and A1 (the bug where this button stuck disabled forever) is exactly the
+ * kind of regression a half-removed call site reintroduces. */
+function updateModeButton() {}
 
 /**
  * A3 (2026-08-24): re-derive heliModeOn from what the layers are ACTUALLY
@@ -346,13 +344,12 @@ function renderList() {
   for (const f of rows) {
     const row = document.createElement('button');
     row.type = 'button';
-    row.className = 'ing-row' + (f.flight === currentFlight ? ' sel' : '');
+    row.className = 'veh-row' + (f.flight === currentFlight ? ' sel' : '');
     row.innerHTML =
-      `<span class="ing-num">#${String(f.flight).padStart(2, '0')}</span>` +
-      `<span class="ing-sol">sol ${f.sol}</span>` +
-      `<span class="ing-date">${f.date}</span>` +
-      `<span class="ing-alt num">${Math.round(f.max_alt_m)} m</span>` +
-      `<span class="ing-dur num">${formatDuration(f.dur_s)}</span>`;
+      `<span class="veh-num">#${String(f.flight).padStart(2, '0')}</span>` +
+      `<span class="veh-mid">${f.date}</span>` +
+      `<span class="veh-a num">${Math.round(f.max_alt_m)} m</span>` +
+      `<span class="veh-b num">${formatDuration(f.dur_s)}</span>`;
     row.addEventListener('click', () => selectFlight(f.flight));
     listEl.appendChild(row);
   }
@@ -598,7 +595,7 @@ function buildChart(host, alt) {
   svg.setAttribute('height', String(H));
   svg.setAttribute('class', 'ing-chart');
   svg.innerHTML =
-    `<path d="${area}" fill="rgba(90,208,255,0.18)" stroke="none"></path>` +
+    `<path d="${area}" fill="rgba(46,230,200,0.18)" stroke="none"></path>` +
     `<path d="${line}" fill="none" stroke="${PALETTE.heli}" stroke-width="1.4"></path>` +
     `<line id="ing-playhead" x1="0" y1="${padT}" x2="0" y2="${H - padB}" ` +
     `stroke="#fff" stroke-width="1" stroke-dasharray="2,2" opacity="0"></line>` +
@@ -879,26 +876,32 @@ function selectFlight(n, opts = {}) {
 /* ---------------------------------------------------------------------------
  * Panel
  * ------------------------------------------------------------------------ */
+/**
+ * E2 (2026-08-25): the "Enter / Exit Ingenuity mode" button is GONE.
+ *
+ * David: the two vehicles "are almost treated like different modes... they
+ * should both be treated in the same way in the menu." A mode you enter was
+ * the single biggest expression of that asymmetry — Percy never had one, and
+ * nothing about a helicopter requires the map to change modes to draw its
+ * path. Her tracks are ordinary layers now: on by default, toggled from Map
+ * beside Percy's, and the panel is purely a list + card like his.
+ *
+ * `setHeliModeOn` survives as the implementation of the `heli-mode` action and
+ * the `on=heli` hash key, which printed QR codes and tour stop 7 both call. It
+ * is no longer reachable from the UI, and nothing calls it to turn Ginny OFF.
+ */
 function buildIngenuityPanel(body) {
   panelBody = body;
   body.innerHTML =
-    '<p class="ing-header" id="ing-header">Loading Ingenuity flight index…</p>' +
-    '<div class="row">' +
-    '<button type="button" class="btn wide" id="ing-mode-btn" aria-pressed="false">' +
-    'Enter Ingenuity mode</button>' +
-    '</div>' +
+    '<p class="veh-header" id="ing-header">Loading Ingenuity flight index…</p>' +
     `<p class="hint" id="ing-lite-note"${LITE ? '' : ' hidden'}>` +
     'Lite mode: ground track and chart only — the 3D altitude ribbon is off.</p>' +
-    '<div class="ing-list" id="ing-list"><p class="panel-empty">Loading…</p></div>' +
-    '<div class="ing-card" id="ing-card" hidden></div>';
+    '<div class="ing-card" id="ing-card" hidden></div>' +
+    '<div class="veh-list" id="ing-list"><p class="panel-empty">Loading…</p></div>';
 
   headerEl = body.querySelector('#ing-header');
   listEl = body.querySelector('#ing-list');
   cardHost = body.querySelector('#ing-card');
-
-  const modeBtn = body.querySelector('#ing-mode-btn');
-  if (modeBtn) modeBtn.addEventListener('click', () => setHeliModeOn(!heliModeOn));
-  updateModeButton();
 
   if (flightsIndex.length) {
     renderHeader();
@@ -906,7 +909,6 @@ function buildIngenuityPanel(body) {
     if (currentFlight) renderCard();
   } else {
     listEl.innerHTML = '<p class="panel-empty">Ingenuity flight data is not available in this build.</p>';
-    if (modeBtn) modeBtn.disabled = true;
   }
 }
 
@@ -1029,7 +1031,7 @@ export async function init(app) {
     drainPendingBookmarkFlight();
   });
 
-  registerPanel('INGENUITY', buildIngenuityPanel);
+  registerPanel('GINNY', buildIngenuityPanel);
 
   const data = await APP.ensureData('heliFlights');
   if (Array.isArray(data) && data.length) {
@@ -1045,8 +1047,6 @@ export async function init(app) {
   } else if (listEl) {
     listEl.innerHTML = '<p class="panel-empty">Ingenuity flight data is not available in this build.</p>';
     if (headerEl) headerEl.textContent = 'Ingenuity flight data is not available in this build.';
-    const modeBtn = panelBody && panelBody.querySelector('#ing-mode-btn');
-    if (modeBtn) modeBtn.disabled = true;
   }
 
   /* heli-paths.geojson is used lazily by flyToFlight()'s bounds fit; kick the

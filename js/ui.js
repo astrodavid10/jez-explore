@@ -16,7 +16,7 @@
  *
  *   import { registerPanel, registerAction, toast, LITE } from './ui.js';
  *
- *   registerPanel('TIMELINE', (body, app) => {
+ *   registerPanel('PERCY', (body, app) => {
  *     //  `body` is an empty <div class="panel-body">, already in the DOM on
  *     //  desktop and inside the sheet on mobile. Build into it. Reuse the
  *     //  house classes: .row .btn .toggle .hint .link-btn .num, and
@@ -28,9 +28,34 @@
  *   export function init(app) { ... }              // optional; called once,
  *                                                  // after the map is ready
  *
- * Panel ids (FROZEN): TIMELINE, VIEWS, LAYERS, INGENUITY, ABOUT.
+ * Panel ids: PERCY, GINNY, LAYERS, VIEWS, ABOUT.
  * Registering the same id twice replaces the builder — last one wins, and the
  * panel is rebuilt immediately if the shell already exists.
+ *
+ * E2 (2026-08-25) — Percy and Ginny are PEERS.
+ *
+ * David: "Perseverance and Ingenuity are almost treated like different modes.
+ * They should both be treated in the same way in the menu." They were not:
+ * Ginny owned a tab named after her AND an explicit mode you entered and
+ * exited, while Percy had no panel at all — he was implicit in a tab called
+ * "Time" and a row of checkboxes in "Layers".
+ *
+ * The old ids TIMELINE and INGENUITY are gone. They were never a published
+ * contract — nothing outside the app addresses a panel id (the URL hash
+ * addresses LAYER ids and scalar keys, which are untouched), so this rename
+ * is safe in a way that renaming a HASH_KEY would not be.
+ *
+ * Two structural consequences, both deliberate:
+ *
+ *   1. The sol slider is NOT in either vehicle's panel. It filters the rover
+ *      traverse AND the flight tracks, so parking it inside "Percy" would
+ *      just recreate the asymmetry one level down. It lives in #clock, a
+ *      persistent strip that belongs to neither and drives both.
+ *   2. "Enter Ingenuity mode" is deleted. Her tracks are ordinary layers now,
+ *      on by default and toggled from Map like everything else. The
+ *      `heli-mode` action and the `on=heli` hash key still work — printed QR
+ *      codes and tour stop 7 call them — they just drive layer visibility
+ *      instead of a mode flag.
  *
  * Action names used by this shell: 'tour:start' (header button),
  * 'data:refresh-all' (About panel link).
@@ -57,19 +82,30 @@ const FEATURE_MODULES = [
 
 /** FROZEN panel order + the mobile tab each panel belongs to. */
 export const PANELS = [
-  { id: 'TIMELINE', title: 'Timeline', tab: 'time' },
-  { id: 'VIEWS', title: 'Views', tab: 'time' },
-  { id: 'LAYERS', title: 'Layers', tab: 'layers' },
-  { id: 'INGENUITY', title: 'Ingenuity', tab: 'heli' },
+  /* Order matters: on desktop every panel is visible and this IS the stacking
+   * order down the sidebar, so the two vehicles sit together at the top with
+   * the map controls beneath them. On mobile it is the tab order. */
+  { id: 'PERCY', title: 'Perseverance', tab: 'percy' },
+  { id: 'GINNY', title: 'Ingenuity', tab: 'ginny' },
+  { id: 'LAYERS', title: 'Layers', tab: 'map' },
+  { id: 'VIEWS', title: 'Views', tab: 'map' },
   { id: 'ABOUT', title: 'About & credits', tab: 'info' },
 ];
 
+/* The nicknames are the labels. "Percy" and "Ginny" are what the mission team
+ * and the public actually call them, they fit a phone tab strip where
+ * "Perseverance" does not, and putting them side by side is the clearest
+ * possible statement that the two are peers. The panel TITLES stay formal
+ * ("Perseverance", "Ingenuity") so the app never looks like it is guessing. */
 const TABS = [
-  { id: 'time', label: 'Time' },
-  { id: 'layers', label: 'Layers' },
-  { id: 'heli', label: 'Heli' },
+  { id: 'percy', label: 'Percy' },
+  { id: 'ginny', label: 'Ginny' },
+  { id: 'map', label: 'Map' },
   { id: 'info', label: 'ⓘ' },
 ];
+
+/** The tab shown on first load, and the fallback when body.dataset.tab is unset. */
+const DEFAULT_TAB = 'percy';
 
 /** Lite mode (§5). A live binding — importers see the value initUI resolves. */
 export let LITE = false;
@@ -83,7 +119,7 @@ let shellReady = false;
  * Public registration API
  * ------------------------------------------------------------------------ */
 /**
- * @param {'TIMELINE'|'VIEWS'|'LAYERS'|'INGENUITY'|'ABOUT'} id
+ * @param {'PERCY'|'GINNY'|'LAYERS'|'VIEWS'|'ABOUT'} id
  * @param {(body:HTMLElement, app:object) => void} buildFn
  */
 export function registerPanel(id, buildFn) {
@@ -226,7 +262,7 @@ function selectTab(tabId) {
 
 function applyPanelVisibility() {
   const mobile = isMobile();
-  const tab = document.body.dataset.tab || 'time';
+  const tab = document.body.dataset.tab || DEFAULT_TAB;
   for (const p of PANELS) {
     const section = document.querySelector(`section.panel[data-panel="${p.id}"]`);
     if (!section) continue;
@@ -267,7 +303,7 @@ function buildShell(app) {
       b.role = 'tab';
       b.dataset.tab = t.id;
       b.textContent = t.label;
-      b.setAttribute('aria-selected', String(t.id === 'time'));
+      b.setAttribute('aria-selected', String(t.id === DEFAULT_TAB));
       b.addEventListener('click', () => {
         selectTab(t.id);
         if (getDetent() === 'peek') setDetent('half');
@@ -276,7 +312,7 @@ function buildShell(app) {
     }
   }
 
-  document.body.dataset.tab = 'time';
+  document.body.dataset.tab = DEFAULT_TAB;
   applyPanelVisibility();
 }
 

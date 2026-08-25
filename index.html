@@ -130,6 +130,14 @@
           rover and the Ingenuity helicopter</p>
       </div>
       <button id="btn-tour" class="primary">▶ START THE TOUR</button>
+
+      <!-- E2 (2026-08-25) — the mission clock, above the tabs and outside every
+           panel. The sol slider filters the rover traverse AND the 72 flight
+           tracks, so it belongs to neither vehicle; giving it to "Percy" would
+           rebuild the very asymmetry the Percy/Ginny split removes. timeline.js
+           renders into this element (renderClock) and owns its controls. -->
+      <div id="clock" aria-label="Mission clock"></div>
+
       <nav id="tabs" role="tablist" aria-label="Sections"></nav>
     </div>
 

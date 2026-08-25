@@ -510,6 +510,15 @@ function buildLayersPanel(body, app) {
     key: 'hyp', label: 'Elevation colors', unavailableHint: 'Not available in Lite mode.',
   });
   buildPaleolakeControl(body, app);
+  /* E2 (2026-08-25): Ginny's tracks get a toggle here, next to Percy's route,
+   * because that is what "treated the same way" means at the layer level. It
+   * replaces the "Enter Ingenuity mode" button, which was the only way to see
+   * them at all — a control Percy never needed and no longer exists. The key
+   * is the frozen `heli` ON_KEYS group, so this checkbox, the `on=heli` hash
+   * key and the tour's `heli-mode` action all drive the same four layers. */
+  buildSimpleToggle(body, app, {
+    key: 'heli', label: 'Flight paths', dataKeys: ['heliPaths'],
+  });
   buildSimpleToggle(body, app, { key: 'wp', label: 'Waypoints', dataKeys: ['waypoints'] });
   buildSimpleToggle(body, app, { key: 'samp', label: 'Samples', dataKeys: ['samples'] });
   buildSimpleToggle(body, app, { key: 'places', label: 'Place names', dataKeys: ['places'] });
