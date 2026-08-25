@@ -200,7 +200,13 @@
 
     <div id="readout">
       <div id="scalebar"><div class="bar"></div><span class="label">—</span></div>
-      <div id="elev-readout" class="elev">—</div>
+      <!-- G2 (2026-08-25): NO placeholder. style.css hides #elev-readout:empty,
+           but seeding it with an em-dash made it non-empty, so on touch devices —
+           where the hover-driven elevation cursor never runs — it sat in the
+           bottom-left corner as a small box containing a dash, forever. Tapping
+           the map already gives a proper elevation popup (F6), so nothing is
+           lost. It now appears only when it has a real value to show. -->
+      <div id="elev-readout" class="elev"></div>
     </div>
 
     <!-- landscape-phone floating sol pill (timeline.js fills it; CSS shows it
