@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-23",
+  "generated": "2026-08-30",
   "snapshot_sol": 1955,
   "snapshot_date": "2026-08-20",
   "body": {
@@ -21,7 +21,7 @@
     "tileSize": 256,
     "minzoom": 16,
     "maxzoom": 17,
-    "bounds": [77.22302, 18.30679, 77.58391, 18.66936]
+    "bounds": [77.05784, 18.13566, 77.58391, 18.66936]
   },
   "imagery_ultra": {
     "url": "https://astrodavid10.github.io/jez-explore-z18/{z}/{x}/{y}.webp",
@@ -45,6 +45,7 @@
   },
   "credits": [
     "Imagery: NASA/JPL-Caltech/UArizona (HiRISE) · NASA/JPL-Caltech/MSSS (CTX)",
+    "MSR HiRISE orthomosaic & DTM: USGS Astrogeology (Mars 2020 TRN, soc_003, Aug 2024) — doi:10.5066/P13CPYYU",
     "Elevation: HiRISE DTMs (NASA/JPL/UArizona) · HRSC (ESA/DLR/FU Berlin) · USGS Astrogeology",
     "Traverse & flight data: NASA/JPL-Caltech (MMGIS)",
     "Tiles & blend: A. David Weigel — INTUITIVE Planetarium, U.S. Space & Rocket Center"

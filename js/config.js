@@ -660,7 +660,7 @@ export const ATTRIBUTION = [
 /** Per-source attribution strings, attached to the style sources. */
 export const SOURCE_ATTRIBUTION = {
   imagery: 'NASA/JPL-Caltech/MSSS · UArizona/HiRISE',
-  imageryHi: 'NASA/JPL-Caltech/UArizona (HiRISE)',
+  imageryHi: 'NASA/JPL-Caltech/UArizona (HiRISE) · USGS Astrogeology (MSR TRN)',
   dem: 'HiRISE DTMs · HRSC (ESA/DLR/FU Berlin) · USGS Astrogeology',
   nasa: 'NASA/JPL-Caltech (MMGIS)',
 };
