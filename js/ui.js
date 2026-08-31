@@ -489,6 +489,8 @@ function aboutHTML(app) {
     <p class="hint">Every map layer in this app comes from the sources below.</p>
     <ul class="credits">
       <li>Imagery: NASA/JPL-Caltech/UArizona (HiRISE) · NASA/JPL-Caltech/MSSS (CTX)</li>
+      <li>MSR HiRISE orthomosaic &amp; DTM: USGS Astrogeology Science Center
+        (Mars 2020 TRN, soc_003, Aug&nbsp;2024) — doi:10.5066/P13CPYYU</li>
       <li>Elevation: HiRISE DTMs (NASA/JPL/UArizona) · HRSC (ESA/DLR/FU&nbsp;Berlin) ·
         USGS Astrogeology</li>
       <li>Traverse, sample and flight data: NASA/JPL-Caltech, via the NASA MMGIS team</li>
