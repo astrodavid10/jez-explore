@@ -468,15 +468,25 @@ export const CONTOUR_STYLE = {
    * more saturated sky blue for the intermediate lines. Casings are tinted
    * blue-black rather than neutral so the pairing does not read as two
    * unrelated colors at small sizes. Kin to the house accent #5ad0ff. */
+  /* F2 (2026-08-30, David: Subtle/Bold still read swapped — in 3D): the
+   * inversion is a CROWDING artifact, not wiring. Line widths are screen-px
+   * constant, but at pitch the ground spacing between contours compresses
+   * toward the horizon and on steep faces; Bold's 4.2–6.6 px near-black
+   * casings at 0.85 then OVERLAP the neighbouring lines' bright cores, and
+   * the lattice collapses into a dim broken hash — so Bold read quieter than
+   * Subtle exactly where David frames beauty shots. Fix: Bold keeps its
+   * bright wide cores but the casing loses the weight that let it eat
+   * neighbours (width ~-30%, opacity 0.85/0.68 -> 0.55/0.42). In flat 2D the
+   * change is barely visible; in 3D Bold now actually reads bold. */
   bold: {
     minor:     { color: '#6fd3f7', w: [1.2, 2.0], o: [0.95, 0.95] },
     major:     { color: '#e6f7ff', w: [2.4, 3.8], o: [1.00, 1.00] },
-    minorCase: { color: '#07131c', w: [2.8, 4.6], o: [0.68, 0.68] },
-    majorCase: { color: '#050e15', w: [4.2, 6.6], o: [0.85, 0.85] },
+    minorCase: { color: '#07131c', w: [2.0, 3.2], o: [0.42, 0.42] },
+    majorCase: { color: '#050e15', w: [3.2, 4.8], o: [0.55, 0.55] },
     fineMinor:     { color: '#6fd3f7', w: [1.0, 1.6], o: [0.95, 0.95] },
     fineMajor:     { color: '#e6f7ff', w: [1.9, 3.0], o: [1.00, 1.00] },
-    fineMinorCase: { color: '#07131c', w: [2.4, 3.8], o: [0.68, 0.68] },
-    fineMajorCase: { color: '#050e15', w: [3.6, 5.4], o: [0.85, 0.85] },
+    fineMinorCase: { color: '#07131c', w: [1.8, 2.7], o: [0.42, 0.42] },
+    fineMajorCase: { color: '#050e15', w: [2.8, 4.0], o: [0.55, 0.55] },
     label: { color: '#eaf8ff', halo: '#04101a', haloWidth: 2.2, size: 12.5 },
   },
 };

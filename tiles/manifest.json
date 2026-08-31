@@ -28,7 +28,7 @@
     "tileSize": 256,
     "minzoom": 18,
     "maxzoom": 18,
-    "bounds": [77.22302, 18.30679, 77.58391, 18.66936],
+    "bounds": [77.05784, 18.13566, 77.58391, 18.66936],
     "probe": "https://astrodavid10.github.io/jez-explore-z18/18/187470/117402.webp"
   },
   "dem": {
